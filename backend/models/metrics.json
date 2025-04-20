@@ -1,0 +1,28 @@
+{
+  "accuracy": 0.9995,
+  "num_categories": 8,
+  "categories": [
+    "Bills & Utilities",
+    "Entertainment",
+    "Food & Dining",
+    "Groceries",
+    "Healthcare",
+    "Others",
+    "Shopping",
+    "Transportation"
+  ],
+  "model_params": {
+    "objective": "multi:softprob",
+    "num_class": 8,
+    "max_depth": 6,
+    "learning_rate": 0.1,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "eval_metric": [
+      "mlogloss",
+      "merror"
+    ],
+    "tree_method": "hist"
+  },
+  "feature_dims": 744
+}

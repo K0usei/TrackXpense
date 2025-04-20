@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 40% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 225 75% 60%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222 47% 11%;
+
+    /* Accent Colors - Harmonious with main accent (262 83% 58%) */
+    --accent-red: 350 80% 60%; /* Complementary to purple */
+    --accent-purple: 275 75% 60%; /* Similar to main accent */
+    --accent-blue: 225 75% 60%; /* Analogous to purple */
+    --accent-green: 150 70% 45%; /* Contrasting but harmonious */
+    --accent-gold: 45 85% 55%; /* Complementary to blue */
+    --accent-emerald: 130 65% 45%; /* Analogous to green */
+    --accent-pink: 320 75% 60%; /* Analogous to purple */
+    --accent-cyan: 195 70% 50%; /* Contrasting but harmonious */
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 225 80% 65%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 32% 17%;
+    --input: 217 32% 17%;
+    --ring: 212.7 26.8% 83.9%;
+
+    /* Dark mode accent colors - slightly brighter for better visibility */
+    --accent-red: 350 85% 65%;
+    --accent-purple: 275 80% 65%;
+    --accent-blue: 225 80% 65%;
+    --accent-green: 150 75% 50%;
+    --accent-gold: 45 90% 60%;
+    --accent-emerald: 130 70% 50%;
+    --accent-pink: 320 80% 65%;
+    --accent-cyan: 195 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Calendar Styles */
+.rdp {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: var(--accent);
+  --rdp-background-color: var(--accent);
+  --rdp-accent-color-dark: var(--accent-foreground);
+  --rdp-background-color-dark: var(--accent-foreground);
+  --rdp-outline: 2px solid var(--ring);
+  --rdp-outline-offset: 2px;
+  margin: 0;
+}
+
+.rdp-day_selected,
+.rdp-day_selected:focus-visible,
+.rdp-day_selected:hover {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+.chart-loading {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Add these to your existing styles */
+@layer utilities {
+  .aspect-receipt {
+    aspect-ratio: 3/4;
+  }
+}
+
+/* Scanner specific styles */
+.receipt-scanner-container {
+  @apply relative w-full h-full mx-auto overflow-hidden;
+  @apply md:max-w-4xl md:rounded-lg md:my-4;
+}
+
+.receipt-preview-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4;
+  @apply max-h-[70vh] overflow-y-auto p-4;
+}
+
+.capture-preview {
+  @apply relative aspect-receipt rounded-lg overflow-hidden;
+  @apply border-2 border-white/20 transition-all;
+  @apply hover:border-accent hover:scale-[1.02];
+}
+
+/* Adjust video display for desktop */
+@media (min-width: 768px) {
+  .receipt-scanner-container video {
+    @apply rounded-lg;
+    @apply shadow-lg;
+  }
+}
+
+/* Animation delay utilities */
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
