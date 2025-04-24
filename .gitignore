@@ -43,4 +43,33 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# certificates
 certificates
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+backend/env/
+backend/.env/
+backend/.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.env
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Large files
+*.pyd
+*.dll
+*.lib
+*.so
+*.dylib
