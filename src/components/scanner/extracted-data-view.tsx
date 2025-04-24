@@ -22,6 +22,7 @@ const getItemsContainerHeight = (itemCount: number): string => {
 interface ExtractedDataViewProps {
   data: ExtractedData
   scannedImageUrl: string
+  additionalImages?: string[] // Additional receipt section images
   onSave: (data: ReceiptData) => void
   onRescan: () => void
 }
@@ -29,15 +30,21 @@ interface ExtractedDataViewProps {
 export function ExtractedDataView({
   data,
   scannedImageUrl,
+  additionalImages = [],
   onSave,
   onRescan
 }: ExtractedDataViewProps) {
+  // Track which image is currently being displayed
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+  // Combine all images into a single array
+  const allImages = [scannedImageUrl, ...additionalImages].filter(Boolean)
   const [editedData, setEditedData] = useState<ExtractedData>({
     ...data,
     store: data.store || { name: '', address: '' },
     total: data.total || { subtotal: 0, tax: 0, discount: 0, change: 0, amount: 0 },
     category: data.category || 'Others',
-    items: data.items && data.items.length > 0 ? data.items : [{ name: '', quantity: 1, price: 0 }]
+    items: data.items && data.items.length > 0 ? data.items : [{ name: '', quantity: 0, price: 0 }]
   })
 
   const handleInputChange = (field: keyof ExtractedData, value: any) => {
@@ -55,8 +62,8 @@ export function ExtractedDataView({
 
   const addNewItem = () => {
     const newItem: ReceiptItem = {
-      name: 'New Item',
-      quantity: 1,
+      name: '',
+      quantity: 0,
       price: 0
     }
     setEditedData({ ...editedData, items: [...editedData.items, newItem] })
@@ -80,12 +87,30 @@ export function ExtractedDataView({
       subtotal: editedData.total.subtotal || calculatedTotal
     }
 
+    // Filter out items with empty names or zero prices
+    const validItems = editedData.items.filter(item =>
+      item.name.trim() !== '' && (item.price > 0 || item.quantity > 0)
+    )
+
+    // If no valid items, add a default item based on the store name
+    if (validItems.length === 0) {
+      validItems.push({
+        name: editedData.store.name || 'Purchase',
+        quantity: 1,
+        price: calculatedTotal
+      })
+    }
+
     // Create a ReceiptData object from the edited data
     const receiptData: ReceiptData = {
       ...editedData,
       id: crypto.randomUUID(),
       category: editedData.category || 'Others',
-      total: updatedTotal
+      total: updatedTotal,
+      items: validItems,
+      time: new Date().toLocaleTimeString(), // Add current time if not present
+      // Include all images in the receipt data
+      imageUrls: allImages
     }
 
     onSave(receiptData)
@@ -111,16 +136,44 @@ export function ExtractedDataView({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Scanned Document Image */}
             <div className="space-y-4">
-              <Label className="text-base font-medium">Scanned Receipt</Label>
+              <div className="flex justify-between items-center">
+                <Label className="text-base font-medium">Scanned Receipt</Label>
+                {allImages.length > 1 && (
+                  <div className="text-sm text-muted-foreground">
+                    Section {currentImageIndex + 1} of {allImages.length}
+                  </div>
+                )}
+              </div>
               <div className="relative aspect-[9/16] w-full border rounded-md overflow-hidden">
                 <Image
-                  src={editedData.imageUrl || scannedImageUrl}
-                  alt="Scanned Receipt"
+                  src={allImages[currentImageIndex] || scannedImageUrl}
+                  alt={`Receipt Section ${currentImageIndex + 1}`}
                   fill
                   className="object-contain"
-                // No need to flip the image here as it's already been flipped during capture if needed
                 />
               </div>
+
+              {/* Image navigation controls */}
+              {allImages.length > 1 && (
+                <div className="flex justify-between mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
+                    disabled={currentImageIndex === 0}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentImageIndex(prev => Math.min(allImages.length - 1, prev + 1))}
+                    disabled={currentImageIndex === allImages.length - 1}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Extracted Data Form */}
@@ -137,16 +190,6 @@ export function ExtractedDataView({
                   }))}
                   className="bg-background"
                   placeholder="Store name"
-                />
-                <Input
-                  id="store-address"
-                  value={editedData.store.address || ''}
-                  onChange={(e) => setEditedData(prev => ({
-                    ...prev,
-                    store: { ...prev.store, address: e.target.value }
-                  }))}
-                  className="bg-background"
-                  placeholder="Store address (optional)"
                 />
               </div>
 
@@ -181,6 +224,8 @@ export function ExtractedDataView({
                     <option value="Transportation">Transportation</option>
                     <option value="Entertainment">Entertainment</option>
                     <option value="Bills & Utilities">Bills & Utilities</option>
+                    <option value="Groceries">Groceries</option>
+                    <option value="Healthcare">Healthcare</option>
                     <option value="Shopping">Shopping</option>
                     <option value="Others">Others</option>
                   </select>
@@ -209,25 +254,28 @@ export function ExtractedDataView({
                               value={item.name}
                               onChange={(e) => handleItemChange(index, 'name', e.target.value)}
                               className="h-7 text-sm"
+                              placeholder="Item name"
                             />
                           </div>
                           <div className="col-span-1 text-center">
                             <Input
                               type="number"
-                              value={item.quantity}
-                              onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 1)}
+                              value={item.quantity || ''}
+                              onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
                               className="h-7 text-sm text-center"
-                              min="1"
+                              min="0"
+                              placeholder="0"
                             />
                           </div>
                           <div className="col-span-2">
                             <Input
                               type="number"
-                              value={item.price}
+                              value={item.price || ''}
                               onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value) || 0)}
                               className="h-7 text-sm text-right"
                               step="0.01"
                               min="0"
+                              placeholder="0.00"
                             />
                           </div>
                           <div className="col-span-1 flex justify-center">
@@ -264,7 +312,7 @@ export function ExtractedDataView({
                         <div className="col-span-2 text-right">
                           <Input
                             type="number"
-                            value={editedData.total.subtotal}
+                            value={editedData.total.subtotal || ''}
                             onChange={(e) => setEditedData(prev => ({
                               ...prev,
                               total: { ...prev.total, subtotal: parseFloat(e.target.value) || 0 }
@@ -272,6 +320,7 @@ export function ExtractedDataView({
                             className="h-7 text-sm text-right"
                             step="0.01"
                             min="0"
+                            placeholder="0.00"
                           />
                         </div>
                         <div className="col-span-1"></div>
@@ -283,7 +332,7 @@ export function ExtractedDataView({
                         <div className="col-span-2 text-right">
                           <Input
                             type="number"
-                            value={editedData.total.tax}
+                            value={editedData.total.tax || ''}
                             onChange={(e) => setEditedData(prev => ({
                               ...prev,
                               total: { ...prev.total, tax: parseFloat(e.target.value) || 0 }
@@ -291,6 +340,7 @@ export function ExtractedDataView({
                             className="h-7 text-sm text-right"
                             step="0.01"
                             min="0"
+                            placeholder="0.00"
                           />
                         </div>
                         <div className="col-span-1"></div>
@@ -302,7 +352,7 @@ export function ExtractedDataView({
                         <div className="col-span-2 text-right">
                           <Input
                             type="number"
-                            value={editedData.total.discount}
+                            value={editedData.total.discount || ''}
                             onChange={(e) => setEditedData(prev => ({
                               ...prev,
                               total: { ...prev.total, discount: parseFloat(e.target.value) || 0 }
@@ -310,6 +360,7 @@ export function ExtractedDataView({
                             className="h-7 text-sm text-right"
                             step="0.01"
                             min="0"
+                            placeholder="0.00"
                           />
                         </div>
                         <div className="col-span-1"></div>
@@ -321,7 +372,7 @@ export function ExtractedDataView({
                         <div className="col-span-2 text-right">
                           <Input
                             type="number"
-                            value={editedData.total.change}
+                            value={editedData.total.change || ''}
                             onChange={(e) => setEditedData(prev => ({
                               ...prev,
                               total: { ...prev.total, change: parseFloat(e.target.value) || 0 }
@@ -329,6 +380,7 @@ export function ExtractedDataView({
                             className="h-7 text-sm text-right"
                             step="0.01"
                             min="0"
+                            placeholder="0.00"
                           />
                         </div>
                         <div className="col-span-1"></div>

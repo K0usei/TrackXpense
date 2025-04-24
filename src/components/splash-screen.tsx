@@ -40,11 +40,18 @@ export function SplashScreen() {
         initial={{ scale: 0.5 }}
         animate={{ scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="text-center"
+        className="text-center w-full"
       >
-        <div className="space-y-2">
+        <div className="space-y-3 sm:space-y-4 px-4 sm:px-6 max-w-xs sm:max-w-sm mx-auto">
           <Logo size="lg" />
-          <p className="text-muted-foreground text-lg">Smart Expense Tracker & Financial Advisor</p>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="text-muted-foreground text-sm sm:text-base md:text-lg leading-relaxed"
+          >
+            Smart Expense Tracker & Financial Advisor
+          </motion.p>
         </div>
       </motion.div>
     </motion.div>

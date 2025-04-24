@@ -14,13 +14,17 @@ export function FirebaseAuthDomainHandler() {
       const hostname = window.location.hostname
       setCurrentDomain(hostname)
 
-      // Only show for non-localhost domains
-      if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      // Check if hostname is an IP address
+      const isIpAddress = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)
+
+      // Only show for non-localhost domains and IP addresses
+      if ((hostname !== 'localhost' && hostname !== '127.0.0.1') || isIpAddress) {
         // Listen for Firebase Auth domain errors
         const handleError = (event: PromiseRejectionEvent) => {
           if (event.reason &&
             typeof event.reason.code === 'string' &&
-            event.reason.code.includes('auth/unauthorized-domain')) {
+            (event.reason.code.includes('auth/unauthorized-domain') ||
+              event.reason.code.includes('auth/invalid-origin'))) {
             console.error('Firebase Auth unauthorized domain error detected:', event.reason)
             setShowAlert(true)
           }

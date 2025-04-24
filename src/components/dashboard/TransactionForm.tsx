@@ -6,10 +6,13 @@ import { Card } from '../ui/card'
 import { Input } from '../ui/input'
 import { Select } from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
-import { ReceiptScanner } from '../scanner/receipt-scanner'
-import type { ReceiptData } from '@/lib/services/ocr-service'
+import { AdvancedReceiptScanner } from '@/components/scanner/advanced-receipt-scanner'
+import type { ReceiptData } from '@/types/receipt'
 import { CategoryPredictor } from '@/lib/services/category-predictor'
 import { EXPENSE_CATEGORIES } from '@/lib/constants'
+import { useNotification } from '@/contexts/NotificationContext'
+import { NotificationType } from '@/lib/services/notification-service'
+import { toast } from '@/lib/toast'
 
 export type TransactionCategory = typeof EXPENSE_CATEGORIES[number]
 
@@ -33,15 +36,18 @@ export function TransactionForm() {
     })
 
     const handleScanComplete = async (receiptData: ReceiptData) => {
+        const storeName = receiptData.store?.name || '';
+        const totalAmount = receiptData.total?.amount || 0;
+
         const prediction = await CategoryPredictor.predictCategory(
-            receiptData.vendor,
-            receiptData.total,
-            receiptData.vendor
+            storeName,
+            totalAmount,
+            storeName
         )
 
         setFormData({
-            description: receiptData.vendor,
-            amount: receiptData.total,
+            description: storeName,
+            amount: totalAmount,
             category: (prediction.category as TransactionCategory) || EXPENSE_CATEGORIES[0],
             date: receiptData.date,
             type: 'expense'
@@ -49,12 +55,28 @@ export function TransactionForm() {
         setShowScanner(false)
     }
 
+    const { notifyExpense } = useNotification()
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
         try {
             // Add your API call here
             await new Promise(resolve => setTimeout(resolve, 1000))
+
+            // Create a notification for the new transaction
+            const notificationType = formData.type === 'expense' ? NotificationType.WARNING : NotificationType.SUCCESS
+            const title = formData.type === 'expense' ? 'Expense Added' : 'Income Added'
+            const message = `${formData.description} - ${formData.amount.toFixed(2)} (${formData.category})`
+
+            // Show toast notification (which will also create a notification)
+            await toast({
+                title,
+                description: message,
+                variant: formData.type === 'expense' ? 'default' : 'default',
+            })
+
+            // Reset form
             setFormData({
                 description: '',
                 amount: 0,
@@ -64,6 +86,11 @@ export function TransactionForm() {
             })
         } catch (error) {
             console.error('Error submitting transaction:', error)
+            await toast({
+                title: 'Error',
+                description: 'Failed to add transaction. Please try again.',
+                variant: 'destructive',
+            })
         } finally {
             setLoading(false)
         }
@@ -80,7 +107,7 @@ export function TransactionForm() {
             </Button>
 
             {showScanner && (
-                <ReceiptScanner onScanComplete={handleScanComplete} />
+                <AdvancedReceiptScanner onScanComplete={handleScanComplete} />
             )}
 
             <Card className="p-4">

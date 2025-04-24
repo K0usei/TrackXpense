@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { ReactNode } from 'react'
+import { NotificationProvider } from '@/contexts/NotificationContext'
 
 // Dynamically import providers to reduce initial bundle size
 const NetworkProvider = dynamic(() => import('@/providers/network-provider'), {
@@ -40,13 +41,15 @@ export function ClientProviders({ children }: { children: ReactNode }) {
       disableTransitionOnChange
     >
       <AuthProvider>
-        <NetworkProvider>
-          {children}
-          <Toaster />
-          <OfflineIndicator />
-          <FirebaseErrorHandler />
-          <FirebaseAuthDomainHandler />
-        </NetworkProvider>
+        <NotificationProvider>
+          <NetworkProvider>
+            {children}
+            <Toaster />
+            <OfflineIndicator />
+            <FirebaseErrorHandler />
+            <FirebaseAuthDomainHandler />
+          </NetworkProvider>
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   )

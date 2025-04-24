@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { ExpenseFilter } from "@/components/dashboard/expense-filter"
@@ -8,13 +8,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useBudgetData } from "@/hooks/useBudgetData"
 import { formatCurrency } from "@/lib/utils"
 import { ErrorBoundary } from "@/components/error-boundary"
-import { cn } from "@/lib/utils"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts'
+
+import { motion, AnimatePresence } from 'framer-motion'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import type { TimeFilter } from '@/lib/chart-utils'
 import { EXPENSE_CATEGORIES } from '@/lib/constants'
 import {
   Receipt,
-  LayoutList,
   Utensils,
   Car,
   Building2,
@@ -41,6 +41,30 @@ const categoryIcons = {
 export default function BudgetReportPage() {
   const [timeframe, setTimeframe] = useState<TimeFilter>('monthly')
   const { totalBudget: income, totalSpent: expenses, categories, loading, error, currency } = useBudgetData(timeframe)
+
+  // Track previous values to highlight changes
+  const [prevIncome, setPrevIncome] = useState<number | null>(null)
+  const [prevExpenses, setPrevExpenses] = useState<number | null>(null)
+  const [incomeChanged, setIncomeChanged] = useState(false)
+  const [expensesChanged, setExpensesChanged] = useState(false)
+
+  // Update the previous values when data changes
+  useEffect(() => {
+    if (!loading) {
+      if (prevIncome !== null && prevIncome !== income) {
+        setIncomeChanged(true)
+        // Reset the highlight after a short delay
+        setTimeout(() => setIncomeChanged(false), 2000)
+      }
+      if (prevExpenses !== null && prevExpenses !== expenses) {
+        setExpensesChanged(true)
+        // Reset the highlight after a short delay
+        setTimeout(() => setExpensesChanged(false), 2000)
+      }
+      setPrevIncome(income)
+      setPrevExpenses(expenses)
+    }
+  }, [income, expenses, loading, prevIncome, prevExpenses])
 
   // Handle error state
   if (error) {
@@ -102,28 +126,64 @@ export default function BudgetReportPage() {
           <Card className="p-4 sm:p-6 relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-violet-500/30 to-violet-500/5 hover:from-violet-500/40 hover:to-violet-500/10 backdrop-blur-sm border-0">
             <div className="flex flex-col gap-1 sm:gap-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">
-                  Total Budget
-                </p>
+                <div>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">
+                    Total Budget
+                  </p>
+                  <div className="inline-flex items-center mt-0.5 px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+                    Monthly
+                  </div>
+                </div>
                 <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-violet-500" />
               </div>
-              <p className="text-lg sm:text-2xl font-semibold truncate">
-                {loading ? "..." : formatCurrency(income, currency)}
-              </p>
+              {loading ? (
+                <p className="text-lg sm:text-2xl font-semibold truncate">...</p>
+              ) : (
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={`budget-${timeframe}-${income}`}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.3 }}
+                    className={`text-lg sm:text-2xl font-semibold truncate ${incomeChanged ? 'text-violet-500' : ''}`}
+                  >
+                    {formatCurrency(income, currency)}
+                  </motion.p>
+                </AnimatePresence>
+              )}
             </div>
           </Card>
 
           <Card className="p-4 sm:p-6 relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-cyan-500/30 to-cyan-500/5 hover:from-cyan-500/40 hover:to-cyan-500/10 backdrop-blur-sm border-0">
             <div className="flex flex-col gap-1 sm:gap-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">
-                  {timeframe === 'daily' ? 'Daily' : timeframe === 'weekly' ? 'Weekly' : 'Monthly'} Expenses
-                </p>
+                <div>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">
+                    Total Expenses
+                  </p>
+                  <div className="inline-flex items-center mt-0.5 px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                    {timeframe === 'daily' ? 'Today' : timeframe === 'weekly' ? 'This Week' : 'This Month'}
+                  </div>
+                </div>
                 <Receipt className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-500" />
               </div>
-              <p className="text-lg sm:text-2xl font-semibold truncate">
-                {loading ? "..." : formatCurrency(expenses, currency)}
-              </p>
+              {loading ? (
+                <p className="text-lg sm:text-2xl font-semibold truncate">...</p>
+              ) : (
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={`expenses-${timeframe}-${expenses}`}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.3 }}
+                    className={`text-lg sm:text-2xl font-semibold truncate ${expensesChanged ? 'text-cyan-500' : ''}`}
+                  >
+                    {formatCurrency(expenses, currency)}
+                  </motion.p>
+                </AnimatePresence>
+              )}
             </div>
           </Card>
         </div>
@@ -132,28 +192,58 @@ export default function BudgetReportPage() {
         <Card className="p-4 sm:p-6 relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-blue-500/30 to-blue-500/5 hover:from-blue-500/40 hover:to-blue-500/10 backdrop-blur-sm border-0">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-base sm:text-lg font-medium">Budget Utilization</h3>
-              <p className="text-sm font-medium">
-                {loading ? "..." : `${Math.round(budgetUtilization)}%`}
-              </p>
+              <div>
+                <h3 className="text-base sm:text-lg font-medium">Budget Utilization</h3>
+                <div className="inline-flex items-center mt-0.5 px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                  {timeframe === 'daily' ? 'Today' : timeframe === 'weekly' ? 'This Week' : 'This Month'}
+                </div>
+              </div>
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={`utilization-${timeframe}-${Math.round(budgetUtilization)}`}
+                  initial={{ opacity: 0, x: 5 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -5 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-sm font-medium"
+                >
+                  {loading ? "..." : `${Math.round(budgetUtilization)}%`}
+                </motion.p>
+              </AnimatePresence>
             </div>
-            <Progress
-              value={budgetUtilization}
-              className="h-2"
-              indicatorClassName={
-                budgetUtilization > 100 ? "bg-red-500" :
-                  budgetUtilization > 80 ? "bg-yellow-500" :
-                    "bg-green-500"
-              }
-            />
-            <p className="text-xs text-muted-foreground">
-              {budgetUtilization > 100 ?
-                `Based on your ${timeframe} spending, you're projected to use ${Math.round(budgetUtilization)}% of your budget.` :
-                budgetUtilization > 80 ?
-                  `You're using ${Math.round(budgetUtilization)}% of your budget based on current ${timeframe} spending.` :
-                  `You've used ${Math.round(budgetUtilization)}% of your budget so far.`
-              }
-            </p>
+            <motion.div
+              initial={{ opacity: 0, scaleX: 0 }}
+              animate={{ opacity: 1, scaleX: 1 }}
+              transition={{ duration: 0.4 }}
+              style={{ width: '100%' }}
+            >
+              <Progress
+                value={budgetUtilization}
+                className="h-2"
+                indicatorClassName={
+                  budgetUtilization > 100 ? "bg-red-500" :
+                    budgetUtilization > 80 ? "bg-yellow-500" :
+                      "bg-green-500"
+                }
+              />
+            </motion.div>
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={`utilization-desc-${timeframe}-${Math.round(budgetUtilization)}`}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="text-xs text-muted-foreground"
+              >
+                {budgetUtilization > 100 ?
+                  `Based on your ${timeframe} spending, you're projected to use ${Math.round(budgetUtilization)}% of your budget.` :
+                  budgetUtilization > 80 ?
+                    `You're using ${Math.round(budgetUtilization)}% of your budget based on current ${timeframe} spending.` :
+                    `You've used ${Math.round(budgetUtilization)}% of your budget so far.`
+                }
+              </motion.p>
+            </AnimatePresence>
           </div>
         </Card>
 
@@ -165,7 +255,12 @@ export default function BudgetReportPage() {
         {/* Budget Overview Chart */}
         <Card className="p-4 sm:p-6 relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-teal-500/30 to-teal-500/5 hover:from-teal-500/40 hover:to-teal-500/10 backdrop-blur-sm border-0">
           <div className="flex flex-col gap-4">
-            <h3 className="text-base sm:text-lg font-medium">Budget Overview</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-medium">Budget Overview</h3>
+              <div className="inline-flex items-center px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
+                {timeframe === 'daily' ? 'Today' : timeframe === 'weekly' ? 'This Week' : 'This Month'}
+              </div>
+            </div>
             <div className="w-full min-h-[300px] sm:min-h-[400px] lg:min-h-[500px]" style={{
               height: `${Math.max(Math.min(chartData.length * 45, 500), 300)}px`,
             }}>
@@ -240,7 +335,12 @@ export default function BudgetReportPage() {
 
         {/* Category Breakdown */}
         <Card className="p-4 sm:p-6">
-          <h3 className="text-lg font-semibold mb-4">Category Breakdown</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-lg font-semibold">Category Breakdown</h3>
+            <div className="inline-flex items-center px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-500/20">
+              {timeframe === 'daily' ? 'Today' : timeframe === 'weekly' ? 'This Week' : 'This Month'}
+            </div>
+          </div>
           <div className="space-y-3">
             {/* Sort categories by spent amount in descending order */}
             {[...chartData]

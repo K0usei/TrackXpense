@@ -1,4 +1,14 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TrackXpense
+
+TrackXpense is an AI-powered expense tracking application that uses OCR to scan receipts, automatically categorize expenses, and provide financial insights.
+
+## Features
+
+- Receipt scanning with OCR (EasyOCR)
+- Automatic expense categorization (XGBoost)
+- Financial insights and analytics
+- Budget tracking and management
+- AI-powered financial assistant
 
 ## Getting Started
 
@@ -20,17 +30,73 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Backend Setup
+
+1. Navigate to the backend directory:
+
+```bash
+cd backend
+```
+
+2. Create a virtual environment:
+
+```bash
+python -m venv venv
+```
+
+3. Activate the virtual environment:
+
+```bash
+# On Windows
+venv\Scripts\activate
+
+# On macOS/Linux
+source venv/bin/activate
+```
+
+4. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+5. For ML components, install additional dependencies:
+
+```bash
+pip install -r ml/requirements.txt
+```
+
+6. Start the backend server:
+
+```bash
+uvicorn main:app --reload
+```
+
+## Dependencies
+
+TrackXpense uses a variety of dependencies for both frontend and backend components. For a complete list, see [DEPENDENCIES.md](DEPENDENCIES.md).
+
+### Checking Dependencies
+
+To check for missing dependencies, run:
+
+```bash
+# For frontend dependencies
+node scripts/check-dependencies.js
+
+# For backend dependencies
+python backend/scripts/check_dependencies.py
+```
+
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+To learn more about the technologies used in this project:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [EasyOCR Documentation](https://github.com/JaidedAI/EasyOCR)
+- [XGBoost Documentation](https://xgboost.readthedocs.io/)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## License
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT

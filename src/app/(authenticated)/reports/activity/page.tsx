@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from "@/components/ui/card"
 import { ExpenseFilter } from "@/components/dashboard/expense-filter"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -10,6 +10,7 @@ import { formatCurrency } from "@/lib/utils"
 import ActivityReport from "@/components/reports/activity-report"
 import { EXPENSE_CATEGORIES } from '@/lib/constants'
 import { categoryColors, CategoryType } from '@/lib/colors'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Receipt,
   LayoutList,
@@ -38,6 +39,23 @@ export default function ActivityReportsPage() {
   const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly'>('monthly')
   const { data, loading, error } = useExpenseData(timeframe)
   const currency = data?.currency || 'PHP'
+
+  // Track previous transaction count to highlight changes
+  const [prevTransactionCount, setPrevTransactionCount] = useState<number | null>(null)
+  const [countChanged, setCountChanged] = useState(false)
+
+  // Update the previous count when data changes
+  useEffect(() => {
+    if (!loading && data) {
+      const currentCount = data.activities.length
+      if (prevTransactionCount !== null && prevTransactionCount !== currentCount) {
+        setCountChanged(true)
+        // Reset the highlight after a short delay
+        setTimeout(() => setCountChanged(false), 2000)
+      }
+      setPrevTransactionCount(currentCount)
+    }
+  }, [data, loading, prevTransactionCount])
 
   if (error) {
     return (
@@ -89,28 +107,56 @@ export default function ActivityReportsPage() {
           <Card className="p-4 sm:p-6 relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-violet-500/30 to-violet-500/5 hover:from-violet-500/40 hover:to-violet-500/10 backdrop-blur-sm border-0">
             <div className="flex flex-col gap-1 sm:gap-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">
-                  Total Transactions
-                </p>
+                <div>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">
+                    Total Transactions
+                  </p>
+                  <div className="inline-flex items-center mt-0.5 px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+                    {timeframe === 'daily' ? 'Today' : timeframe === 'weekly' ? 'This Week' : 'This Month'}
+                  </div>
+                </div>
                 <Receipt className="h-4 w-4 sm:h-5 sm:w-5 text-violet-500" />
               </div>
-              <p className="text-lg sm:text-2xl font-semibold truncate">
-                {loading ? "..." : data?.activities.length || 0}
-              </p>
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={`transactions-${timeframe}-${data?.activities.length || 0}`}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.3 }}
+                  className={`text-lg sm:text-2xl font-semibold truncate ${countChanged ? 'text-violet-500' : ''}`}
+                >
+                  {loading ? "..." : data?.activities.length || 0}
+                </motion.p>
+              </AnimatePresence>
             </div>
           </Card>
 
           <Card className="p-4 sm:p-6 relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-cyan-500/30 to-cyan-500/5 hover:from-cyan-500/40 hover:to-cyan-500/10 backdrop-blur-sm border-0">
             <div className="flex flex-col gap-1 sm:gap-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">
-                  Top Category
-                </p>
+                <div>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">
+                    Top Category
+                  </p>
+                  <div className="inline-flex items-center mt-0.5 px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                    {timeframe === 'daily' ? 'Today' : timeframe === 'weekly' ? 'This Week' : 'This Month'}
+                  </div>
+                </div>
                 <LayoutList className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-500" />
               </div>
-              <p className="text-lg sm:text-2xl font-semibold truncate">
-                {loading ? "..." : data?.categoryBreakdown[0]?.category || "N/A"}
-              </p>
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={`category-${timeframe}-${data?.categoryBreakdown[0]?.category || 'N/A'}`}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-lg sm:text-2xl font-semibold truncate"
+                >
+                  {loading ? "..." : data?.categoryBreakdown[0]?.category || "N/A"}
+                </motion.p>
+              </AnimatePresence>
             </div>
           </Card>
         </div>
@@ -123,7 +169,12 @@ export default function ActivityReportsPage() {
         {/* Line Chart */}
         <Card className="p-4 sm:p-6 relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-teal-500/30 to-teal-500/5 hover:from-teal-500/40 hover:to-teal-500/10 backdrop-blur-sm border-0">
           <div className="flex flex-col gap-4 h-[300px] sm:h-[350px] lg:h-[400px]">
-            <h3 className="text-base sm:text-lg font-medium">Expense Trends</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-medium">Expense Trends</h3>
+              <div className="inline-flex items-center px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
+                {timeframe === 'daily' ? 'Today' : timeframe === 'weekly' ? 'This Week' : 'This Month'}
+              </div>
+            </div>
             <div className="flex-1">
               <ActivityReport
                 data={data?.spendingTrendsByCategory}
@@ -137,7 +188,12 @@ export default function ActivityReportsPage() {
 
         {/* Category Breakdown with Gradient Colors and Icons */}
         <Card className="p-4 sm:p-6">
-          <h3 className="text-lg font-semibold mb-4">Category Breakdown</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-lg font-semibold">Category Breakdown</h3>
+            <div className="inline-flex items-center px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-500/20">
+              {timeframe === 'daily' ? 'Today' : timeframe === 'weekly' ? 'This Week' : 'This Month'}
+            </div>
+          </div>
           <div className="space-y-3">
             {mergedCategoryData.map((item) => {
               const categoryKey = item.category as CategoryType;

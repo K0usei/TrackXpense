@@ -10,7 +10,6 @@ import { PostgresStorageService } from '@/lib/services/postgres-storage-service'
 import { CategoryPredictor } from '@/lib/services/category-predictor'
 import type { ReceiptData, ExtractedData } from '@/types/receipt'
 import { ExtractedDataView } from './extracted-data-view'
-// Document scanner no longer used - directly using original images for OCR
 
 interface AdvancedReceiptScannerProps {
   onScanComplete: (data: ReceiptData) => void
@@ -544,43 +543,42 @@ export function AdvancedReceiptScanner({ onScanComplete }: AdvancedReceiptScanne
       }
 
       // Now upload the images to PostgreSQL
-      const imageUrls: string[] = []
+      let imageUrls: string[] = []
 
       if (auth.currentUser && tempImageFiles.length > 0) {
         // Show upload toast
         toast({
           title: "Uploading Images",
-          description: "Saving receipt images to storage...",
+          description: `Saving ${tempImageFiles.length} receipt section${tempImageFiles.length > 1 ? 's' : ''} to storage...`,
         })
 
-        // Upload files in parallel with error handling
-        const uploadPromises = tempImageFiles.map(file =>
-          PostgresStorageService.uploadReceipt(file, auth.currentUser!.uid)
-            .catch((error: Error) => {
-              console.error('Image upload failed:', error)
-              // Return null for failed uploads
-              return null
-            })
-        )
+        try {
+          // Use the new method to upload multiple receipt sections
+          imageUrls = await PostgresStorageService.uploadMultipleReceipts(
+            tempImageFiles,
+            auth.currentUser.uid
+          )
 
-        const results = await Promise.all(uploadPromises)
-
-        // Filter out failed uploads
-        const successfulUrls = results.filter((url): url is string => url !== null)
-        imageUrls.push(...successfulUrls)
-
-        console.log(`Successfully uploaded ${imageUrls.length} of ${tempImageFiles.length} images`)
+          console.log(`Successfully uploaded ${imageUrls.length} of ${tempImageFiles.length} receipt sections`)
+        } catch (uploadError) {
+          console.error('Failed to upload receipt images:', uploadError)
+          toast({
+            title: "Image Upload Warning",
+            description: "Some receipt images could not be uploaded. The receipt data will still be saved.",
+            variant: "destructive"
+          })
+        }
 
         // Update the receipt data with image URLs
         editedData.imageUrls = imageUrls
       }
 
-      // Save the receipt data
+      // Save the receipt data to create both Receipt and Expense records
       onScanComplete(editedData)
 
       toast({
         title: "Receipt Saved",
-        description: "Your receipt has been successfully processed and saved.",
+        description: `Your receipt has been successfully processed and saved with ${imageUrls.length} image${imageUrls.length !== 1 ? 's' : ''}.`,
       })
     } catch (error) {
       console.error('Error saving receipt:', error)
@@ -813,6 +811,7 @@ export function AdvancedReceiptScanner({ onScanComplete }: AdvancedReceiptScanne
           <ExtractedDataView
             data={editedData}
             scannedImageUrl={capturedSections[0]}
+            additionalImages={capturedSections.slice(1)} // Pass additional images
             onSave={saveReceipt}
             onRescan={resetScanner}
           />

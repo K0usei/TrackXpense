@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 from ...db.session import get_db
-from ...models import Receipt
+from ...models import Receipt, Expense
 
 # Configure logging
 logging.basicConfig(
@@ -286,6 +286,26 @@ async def save_receipt(receipt_data: dict, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(receipt)
 
+        # Also create an expense record for this receipt
+        # Get the first image URL if available, or None if no images
+        image_urls = receipt_data.get("imageUrls", [])
+        receipt_url = image_urls[0] if image_urls else None
+
+        # Create the expense record
+        expense = Expense(
+            user_id=receipt_data.get("userId", ""),
+            amount=total_amount,
+            category=receipt_data.get("category", "Others"),
+            date=datetime.strptime(receipt_data.get("date", datetime.now().strftime("%Y-%m-%d")), "%Y-%m-%d"),
+            description=store_name,
+            receipt_url=receipt_url
+        )
+
+        # Add expense to database
+        db.add(expense)
+        db.commit()
+        db.refresh(expense)
+
         # Return the saved receipt data
         response_data = {
             "id": receipt.id,
@@ -306,7 +326,8 @@ async def save_receipt(receipt_data: dict, db: Session = Depends(get_db)):
             "category": receipt.category,
             "imageUrls": receipt.image_urls,
             "confidence": receipt.confidence,
-            "createdAt": receipt.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            "createdAt": receipt.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "expenseId": expense.id  # Include the expense ID for reference
         }
 
         return response_data

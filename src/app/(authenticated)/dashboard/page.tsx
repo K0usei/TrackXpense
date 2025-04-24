@@ -62,6 +62,7 @@ export default function DashboardPage() {
         remainingBalance={remainingBalance}
         loading={loading}
         currency={currency}
+        timeframe={timeframe}
       />
 
       {/* Timeframe Filter */}
@@ -73,7 +74,12 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:gap-8 lg:grid-cols-2 mt-2">
         <Card className="p-4 sm:p-6 relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-violet-500/40 to-violet-500/10 hover:from-violet-500/50 hover:to-violet-500/20 backdrop-blur-sm border-0">
           <div className="flex flex-col gap-2 sm:gap-4 h-full">
-            <h3 className="text-base sm:text-lg font-medium">Expense Categories</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-medium">Expense Categories</h3>
+              <div className="inline-flex items-center px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+                {timeframe === 'daily' ? 'Today' : timeframe === 'weekly' ? 'This Week' : 'This Month'}
+              </div>
+            </div>
             <div className="flex-1 min-h-[250px]">
               <DonutChart
                 data={data?.budgetOverview || []}
@@ -85,7 +91,12 @@ export default function DashboardPage() {
         </Card>
         <Card className="p-4 sm:p-6 relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-cyan-500/30 to-cyan-500/5 backdrop-blur-sm border-0">
           <div className="flex flex-col gap-2 sm:gap-4 h-full">
-            <h3 className="text-base sm:text-lg font-medium">Spending Overview</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-medium">Spending Overview</h3>
+              <div className="inline-flex items-center px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                {timeframe === 'daily' ? 'Today' : timeframe === 'weekly' ? 'This Week' : 'This Month'}
+              </div>
+            </div>
             <div className="flex-1 min-h-[250px]">
               <BarGraph
                 data={formattedData}

@@ -18,6 +18,8 @@ import {
     Moon,
     Receipt,
 } from 'lucide-react'
+import { NotificationsList } from '@/components/notifications/notifications-list'
+import { fetchNotifications } from '@/lib/services/notification-service'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { Logo } from "@/components/ui/logo"
@@ -29,6 +31,7 @@ import { Separator } from "@/components/ui/separator"
 import { toast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface DashboardLayoutProps {
     children: React.ReactNode
@@ -80,16 +83,46 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const [open, setOpen] = useState(false)
     const { user, signOut } = useAuth()
     const { theme, setTheme } = useTheme()
+    const [showNotifications, setShowNotifications] = useState(false)
+    const [unreadCount, setUnreadCount] = useState(0)
 
     // Check if current page is scanner
     const isScanner = pathname === '/scanner'
 
+    // Fetch unread notifications count
+    const fetchUnreadCount = async () => {
+        if (user) {
+            try {
+                const notifications = await fetchNotifications()
+                const unread = notifications.filter(n => !n.read).length
+                setUnreadCount(unread)
+            } catch (error) {
+                console.error('Error fetching notifications:', error)
+                // Don't show error toast to avoid spamming the user
+                setUnreadCount(0)
+            }
+        } else {
+            // Reset unread count if user is not logged in
+            setUnreadCount(0)
+        }
+    }
+
+    // Fetch notifications count on mount and when user changes
+    useEffect(() => {
+        fetchUnreadCount()
+    }, [user])
+
+    // Refresh notifications count when the dialog is closed
+    const handleNotificationsDialogChange = (open: boolean) => {
+        setShowNotifications(open)
+        if (!open) {
+            // Refresh the count when the dialog is closed
+            fetchUnreadCount()
+        }
+    }
+
     const handleNotificationsClick = () => {
-        setOpen(false) // Close the sheet when clicking notification
-        toast({
-            title: "Notifications",
-            description: "Notifications feature coming soon!",
-        })
+        setShowNotifications(true)
     }
 
     const handleSignOut = async () => {
@@ -184,11 +217,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                     <NavLink key={item.href} {...item} onClick={() => setOpen(false)} />
                                 ))}
                                 <button
-                                    onClick={handleNotificationsClick}
-                                    className="flex w-full items-center gap-3 px-3 py-2 hover:bg-accent hover:text-accent-foreground rounded-md"
+                                    onClick={() => {
+                                        handleNotificationsClick()
+                                        setOpen(false)
+                                    }}
+                                    className="flex w-full items-center gap-3 px-3 py-2 hover:bg-accent hover:text-accent-foreground rounded-md relative"
                                 >
                                     <Bell className="h-5 w-5" />
                                     <span className="font-medium">Notifications</span>
+                                    {unreadCount > 0 && (
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-medium text-white">
+                                            {unreadCount}
+                                        </span>
+                                    )}
                                 </button>
                                 <Separator className="my-2" />
                                 <button
@@ -256,10 +297,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                     ))}
                                     <button
                                         onClick={handleNotificationsClick}
-                                        className="flex w-full items-center gap-3 px-3 py-2 hover:bg-accent hover:text-accent-foreground rounded-md"
+                                        className="flex w-full items-center gap-3 px-3 py-2 hover:bg-accent hover:text-accent-foreground rounded-md relative"
                                     >
                                         <Bell className="h-5 w-5" />
                                         <span className="font-medium">Notifications</span>
+                                        {unreadCount > 0 && (
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-medium text-white">
+                                                {unreadCount}
+                                            </span>
+                                        )}
                                     </button>
                                     <Separator className="my-2" />
                                     <button
@@ -309,6 +355,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             )}>
                 {children}
             </div>
+
+            {/* Notifications Dialog */}
+            <Dialog open={showNotifications} onOpenChange={handleNotificationsDialogChange}>
+                <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Notifications</DialogTitle>
+                    </DialogHeader>
+                    <NotificationsList />
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

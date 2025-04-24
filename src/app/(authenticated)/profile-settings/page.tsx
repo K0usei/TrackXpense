@@ -9,17 +9,19 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useToast } from '@/components/ui/use-toast'
+import { toast } from '@/lib/toast'
 import { doc, updateDoc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { CurrencyCode, UserSettings, BudgetLimit } from '@/types/user'
 import { Loader2 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { useNotification } from '@/contexts/NotificationContext'
+import { NotificationType } from '@/lib/services/notification-service'
 
 export default function ProfilePage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { toast } = useToast()
+  const { notifyBudget } = useNotification()
   const [isNewUser, setIsNewUser] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -125,7 +127,7 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!user) {
       console.error('Cannot save settings: User is not authenticated')
-      toast({
+      await toast({
         title: "Error",
         description: "You must be logged in to save settings.",
         variant: "destructive"
@@ -136,7 +138,7 @@ export default function ProfilePage() {
     // Ensure settings object is valid before saving
     if (!settings || !settings.budgetLimits) {
       console.error('Cannot save settings: Invalid settings object', settings)
-      toast({
+      await toast({
         title: "Error",
         description: "There was a problem with your settings. Please try again.",
         variant: "destructive"
@@ -146,7 +148,7 @@ export default function ProfilePage() {
 
     // Validate monthly budget for new users
     if (isNewUser && settings.monthlyBudget === 0) {
-      toast({
+      await toast({
         title: "Validation Error",
         description: "Please enter a monthly budget greater than zero.",
         variant: "destructive"
@@ -159,7 +161,7 @@ export default function ProfilePage() {
 
     // Check if all budget limits are zero for new users
     if (isNewUser && totalBudgetLimits === 0) {
-      toast({
+      await toast({
         title: "Validation Error",
         description: "Please set at least one category budget before continuing.",
         variant: "destructive"
@@ -170,7 +172,7 @@ export default function ProfilePage() {
     // Check if total budget limits exceed monthly budget
     if (totalBudgetLimits > settings.monthlyBudget && settings.monthlyBudget > 0) {
       // Show a warning but allow saving
-      toast({
+      await toast({
         title: "Budget Warning",
         description: `The sum of your category budgets (${formatCurrency(totalBudgetLimits, settings.currency)}) exceeds your monthly budget (${formatCurrency(settings.monthlyBudget, settings.currency)}).
         You can still save, but consider adjusting your category budgets.`,
@@ -236,7 +238,12 @@ export default function ProfilePage() {
         user.settings = settingsToSave
       }
 
-      toast({
+      // Create a notification for the budget update
+      const title = isNewUser ? 'Budget Created' : 'Budget Updated'
+      const message = `Your monthly budget of ${formatCurrency(settings.monthlyBudget, settings.currency)} has been ${isNewUser ? 'set' : 'updated'}.`
+
+      // Show toast notification (which will also create a notification)
+      await toast({
         title: "Settings saved",
         description: "Your profile settings have been updated successfully.",
       })
@@ -251,7 +258,7 @@ export default function ProfilePage() {
       // Type the error properly
       const err = error as { message?: string }
       console.error('Error saving settings:', err)
-      toast({
+      await toast({
         title: "Error",
         description: err.message || "Failed to save settings. Please try again.",
         variant: "destructive"
@@ -290,6 +297,7 @@ export default function ProfilePage() {
 
       // If total exceeds monthly budget, show a warning toast
       if (totalBudgetLimits > prev.monthlyBudget && prev.monthlyBudget > 0) {
+        // We'll use a non-async call here to avoid complicating the state update
         toast({
           title: "Budget Warning",
           description: `The sum of your category budgets (${formatCurrency(totalBudgetLimits, prev.currency)}) exceeds your monthly budget (${formatCurrency(prev.monthlyBudget, prev.currency)}).`,

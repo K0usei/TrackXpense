@@ -1,12 +1,11 @@
 import uvicorn
 import os
 import fastapi
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.api.endpoints import ocr, receipts, finance_gpt
-from app.core.config import settings
-import ssl
 
 app = FastAPI(
     title="TrackXpense API",
@@ -30,6 +29,8 @@ async def redirect_predict_category(data: dict = fastapi.Body(...)):
     return await ocr.predict_category(data)
 
 # Add CORS middleware
+# For development, we'll allow all origins
+# In production, this should be restricted to specific domains
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allow all origins for development
@@ -45,6 +46,11 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.include_router(ocr.router, prefix="/api/ocr", tags=["ocr"])
 app.include_router(receipts.router, prefix="/api/receipts", tags=["receipts"])
 app.include_router(finance_gpt.router, prefix="/api/v1", tags=["finance-gpt"])
+
+# Mount static files directory for uploads
+uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 if __name__ == "__main__":
     import socket

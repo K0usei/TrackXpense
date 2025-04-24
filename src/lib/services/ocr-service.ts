@@ -323,13 +323,33 @@ export class OCRService {
       // Use the provided ID or generate a new one
       const receiptId = receiptData.id || crypto.randomUUID()
 
+      // Ensure all required fields are present
+      const currentDate = new Date()
+      const formattedDate = receiptData.date || currentDate.toISOString().split('T')[0]
+      const formattedTime = receiptData.time || currentDate.toLocaleTimeString()
+
       // Add user ID and timestamp if not present
       const dataToSave = {
         ...receiptData,
         id: receiptId,
         userId: receiptData.userId || auth.currentUser.uid,
-        createdAt: receiptData.createdAt || new Date().toISOString(),
-        category: receiptData.category || 'Others'
+        createdAt: receiptData.createdAt || currentDate.toISOString(),
+        category: receiptData.category || 'Others',
+        date: formattedDate,
+        time: formattedTime,
+        // Ensure store has a name
+        store: {
+          name: receiptData.store?.name || 'Unknown Store',
+          address: receiptData.store?.address || ''
+        },
+        // Ensure total has all required fields
+        total: {
+          amount: receiptData.total?.amount || 0,
+          subtotal: receiptData.total?.subtotal || receiptData.total?.amount || 0,
+          tax: receiptData.total?.tax || 0,
+          discount: receiptData.total?.discount || 0,
+          change: receiptData.total?.change || 0
+        }
       }
 
       // Save to backend API using the new endpoint

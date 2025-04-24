@@ -19,16 +19,10 @@ interface Message {
   recommendations?: string[]
 }
 
-const INITIAL_MESSAGE: Message = {
-  id: '1',
-  content: "Hi! I'm Xpenser, your AI financial advisor. I can help you with:\n• Budget planning and analysis\n• Spending insights and patterns\n• Money-saving recommendations\n\nWhat would you like to know about your finances?",
-  role: 'assistant',
-  timestamp: new Date(),
-  type: 'budget'
-}
+// Initial message removed as per user request
 
 export function XpenserChat() {
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE])
+  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -124,40 +118,54 @@ export function XpenserChat() {
 
       <ScrollArea ref={scrollRef} className="flex-1 p-4">
         <div className="space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`flex items-start gap-2 max-w-[80%] ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                <Avatar className="h-8 w-8">
-                  {message.role === 'assistant' ? (
-                    <>
-                      <AvatarImage src="/xpenser-avatar.png" alt="Xpenser" />
-                      <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
-                    </>
-                  ) : (
-                    <>
-                      <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-                    </>
-                  )}
+          {messages.length === 0 ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="flex flex-col items-center space-y-4 text-center max-w-md">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src="/xpenser-avatar.png" alt="Xpenser" />
+                  <AvatarFallback><Bot className="h-8 w-8" /></AvatarFallback>
                 </Avatar>
-                <div
-                  className={`rounded-lg p-3 ${message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
-                    }`}
-                >
-                  <div className="whitespace-pre-wrap">{message.content}</div>
-                  {message.type && (
-                    <div className="text-xs mt-2 opacity-70">
-                      #{message.type}
-                    </div>
-                  )}
-                </div>
+                <p className="text-muted-foreground text-sm">
+                  Your Personal AI Financial Advisor
+                </p>
               </div>
             </div>
-          ))}
+          ) : (
+            messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className={`flex items-start gap-2 max-w-[80%] ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                  <Avatar className="h-8 w-8">
+                    {message.role === 'assistant' ? (
+                      <>
+                        <AvatarImage src="/xpenser-avatar.png" alt="Xpenser" />
+                        <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
+                      </>
+                    ) : (
+                      <>
+                        <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                      </>
+                    )}
+                  </Avatar>
+                  <div
+                    className={`rounded-lg p-3 ${message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                      }`}
+                  >
+                    <div className="whitespace-pre-wrap">{message.content}</div>
+                    {message.type && (
+                      <div className="text-xs mt-2 opacity-70">
+                        #{message.type}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
           {isLoading && (
             <div className="flex justify-start">
               <div className="flex items-center gap-2 max-w-[80%]">

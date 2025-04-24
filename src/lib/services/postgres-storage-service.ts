@@ -1,9 +1,22 @@
 import { getAuth } from 'firebase/auth'
 
+interface UploadResult {
+  url: string;
+  filename: string;
+  sectionIndex: string;
+}
+
 export class PostgresStorageService {
   private static API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8000/api'
 
-  static async uploadReceipt(file: File, userId: string): Promise<string> {
+  /**
+   * Upload a single receipt image section
+   * @param file The image file to upload
+   * @param userId The user ID
+   * @param sectionIndex The index of this section in a multi-section receipt
+   * @returns The URL of the uploaded file
+   */
+  static async uploadReceipt(file: File, userId: string, sectionIndex: number = 0): Promise<string> {
     try {
       const auth = getAuth();
       if (!auth.currentUser) {
@@ -21,8 +34,9 @@ export class PostgresStorageService {
       formData.append('userId', userId);
       formData.append('timestamp', timestamp.toString());
       formData.append('contentType', file.type || 'image/jpeg');
+      formData.append('sectionIndex', sectionIndex.toString());
 
-      console.log('Starting upload to PostgreSQL:', safeFileName);
+      console.log(`Starting upload to PostgreSQL: section ${sectionIndex}`, safeFileName);
 
       // Upload the file to the backend API
       const response = await fetch(`${this.API_BASE}/receipts/upload`, {
@@ -40,14 +54,35 @@ export class PostgresStorageService {
         throw new Error(`Failed to upload receipt image: ${response.status} ${errorText}`);
       }
 
-      const data = await response.json();
-      console.log('Upload complete, URL:', data.url);
+      const data = await response.json() as UploadResult;
+      console.log(`Upload complete for section ${sectionIndex}, URL:`, data.url);
 
       // Return the URL to the uploaded file
       return data.url;
     } catch (error) {
       console.error('Upload setup failed:', error);
       throw new Error('Failed to initialize upload: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  }
+
+  /**
+   * Upload multiple receipt image sections
+   * @param files Array of image files to upload
+   * @param userId The user ID
+   * @returns Array of URLs for the uploaded files
+   */
+  static async uploadMultipleReceipts(files: File[], userId: string): Promise<string[]> {
+    try {
+      const uploadPromises = files.map((file, index) =>
+        this.uploadReceipt(file, userId, index)
+      );
+
+      const urls = await Promise.all(uploadPromises);
+      console.log(`Successfully uploaded ${urls.length} receipt sections`);
+      return urls;
+    } catch (error) {
+      console.error('Failed to upload multiple receipt sections:', error);
+      throw new Error('Failed to upload receipt images: ' + (error instanceof Error ? error.message : String(error)));
     }
   }
 
