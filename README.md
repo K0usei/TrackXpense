@@ -1,36 +1,34 @@
 # TrackXpense
 
-TrackXpense is an AI-powered expense tracking application that uses OCR to scan receipts, automatically categorize expenses, and provide financial insights.
+TrackXpense is an AI-powered expense tracking progressive web application (PWA) that uses OCR to scan receipts, automatically categorize expenses, and provide financial insights.
 
 ## Features
 
 - Receipt scanning with OCR (EasyOCR)
 - Automatic expense categorization (XGBoost)
-- Financial insights and analytics
-- Budget tracking and management
+- Expense visualization and analytics
+- Budget tracking and receipt management
 - AI-powered financial assistant
 
 ## Getting Started
 
-First, run the development server:
+### Frontend Setup
+
+First, run the development server with HTTPS enabled:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This will start the Next.js server with HTTPS enabled on port 3000. The server uses self-signed certificates located in the `certificates` directory.
+
+Open [https://localhost:3000](https://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Backend Setup
+### Backend Setup
 
 1. Navigate to the backend directory:
 
@@ -66,11 +64,29 @@ pip install -r requirements.txt
 pip install -r ml/requirements.txt
 ```
 
-6. Start the backend server:
+6. Start the backend server with HTTPS:
 
 ```bash
-uvicorn main:app --reload
+# On Windows
+uvicorn main:app --reload --ssl-keyfile=../certificates/key.pem --ssl-certfile=../certificates/cert.pem --host 0.0.0.0
+
+# On macOS/Linux
+uvicorn main:app --reload --ssl-keyfile=../certificates/key.pem --ssl-certfile=../certificates/cert.pem --host 0.0.0.0
 ```
+
+This will start the FastAPI server with HTTPS enabled on port 8000.
+
+### Accessing the Application
+
+- Frontend: https://localhost:3000
+- Backend API: https://localhost:8000
+
+To access the application from other devices on your network, use your computer's IP address instead of localhost:
+
+- Frontend: https://your-ip-address:3000
+- Backend API: https://your-ip-address:8000
+
+Note: Since the application uses self-signed certificates, you may need to accept security warnings in your browser.
 
 ## Dependencies
 
@@ -87,6 +103,20 @@ node scripts/check-dependencies.js
 # For backend dependencies
 python backend/scripts/check_dependencies.py
 ```
+
+## Project Structure
+
+For a detailed overview of the project structure, see [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
+
+For a visual map of components and their relationships, see [COMPONENT_MAP.md](COMPONENT_MAP.md).
+
+Key directories:
+
+- [Frontend Components](src/components/README.md)
+- [Frontend Utilities](src/lib/README.md)
+- [Frontend Services](src/lib/services/README.md)
+- [Backend Application](backend/app/README.md)
+- [Machine Learning Models](backend/ml/README.md)
 
 ## Learn More
 

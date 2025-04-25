@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.api.endpoints import ocr, receipts, finance_gpt
+from app.api.endpoints import ocr, receipts
 
 app = FastAPI(
     title="TrackXpense API",
@@ -45,7 +45,6 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 # Include routers
 app.include_router(ocr.router, prefix="/api/ocr", tags=["ocr"])
 app.include_router(receipts.router, prefix="/api/receipts", tags=["receipts"])
-app.include_router(finance_gpt.router, prefix="/api/v1", tags=["finance-gpt"])
 
 # Mount static files directory for uploads
 uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")

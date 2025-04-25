@@ -31,8 +31,6 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-secret-key-here"
 
     # API Keys
-    FINANCE_GPT_API_KEY: str = secrets.token_urlsafe(32)
-    OPENAI_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
 
     # API Settings

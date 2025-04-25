@@ -14,8 +14,6 @@ import {
     Settings,
     Image as ImageIcon,
     LogOut,
-    Sun,
-    Moon,
     Receipt,
 } from 'lucide-react'
 import { NotificationsList } from '@/components/notifications/notifications-list'
@@ -32,49 +30,10 @@ import { toast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ThemeToggle } from '@/components/theme-toggle'
 
 interface DashboardLayoutProps {
     children: React.ReactNode
-}
-
-const ThemeToggle = () => {
-    const { theme, setTheme } = useTheme()
-    const [mounted, setMounted] = useState(false)
-
-    // Only show theme toggle after component is mounted on client
-    // This prevents hydration mismatch
-    useEffect(() => {
-        setMounted(true)
-    }, [])
-
-    if (!mounted) {
-        // Return a placeholder with the same dimensions to prevent layout shift
-        return (
-            <Button
-                variant="ghost"
-                size="icon"
-                className="text-foreground"
-                disabled
-            >
-                <div className="h-6 w-6" />
-            </Button>
-        )
-    }
-
-    return (
-        <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="text-foreground"
-        >
-            {theme === 'dark' ? (
-                <Sun className="h-6 w-6" />
-            ) : (
-                <Moon className="h-6 w-6" />
-            )}
-        </Button>
-    )
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {

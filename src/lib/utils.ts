@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import imageCompression from 'browser-image-compression'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -38,8 +39,25 @@ export function getCurrencySymbol(currencyCode: string = 'PHP'): string {
   return symbols[currencyCode] || currencyCode
 }
 
+// Image utilities
+interface CompressionOptions {
+  maxSizeMB: number
+  maxWidthOrHeight: number
+}
 
-
-
+export async function compressImage(
+  file: File,
+  options: CompressionOptions = {
+    maxSizeMB: 1,
+    maxWidthOrHeight: 1920
+  }
+): Promise<File> {
+  try {
+    return await imageCompression(file, options)
+  } catch (error) {
+    console.error('Error compressing image:', error)
+    return file
+  }
+}
 
 
