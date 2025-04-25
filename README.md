@@ -88,6 +88,64 @@ To access the application from other devices on your network, use your computer'
 
 Note: Since the application uses self-signed certificates, you may need to accept security warnings in your browser.
 
+### API Key Management
+
+TrackXpense uses several external APIs that require API keys, including:
+
+- Gemini API for the AI financial assistant
+- Firebase for authentication and storage
+
+#### Setting Up API Keys
+
+1. Create a `.env.local` file in the root directory (if it doesn't exist)
+2. Add your API keys to this file:
+
+```
+# Firebase Config
+NEXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
+
+# Gemini API
+GEMINI_API_KEY=your-gemini-api-key
+
+# Database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trackxpense
+```
+
+#### API Key Security Best Practices
+
+1. **Never commit API keys to version control**:
+
+   - Ensure `.env.local` and other files with API keys are in your `.gitignore`
+   - If you accidentally commit an API key, consider it compromised and generate a new one
+
+2. **Use environment-specific keys**:
+
+   - Development: Use separate API keys for development environments
+   - Production: Use different API keys with appropriate restrictions
+   - Testing: Consider using mock APIs for automated tests
+
+3. **Restrict API key permissions**:
+
+   - Limit API keys to only the permissions they need
+   - Set usage quotas to prevent unexpected charges
+
+4. **Rotate API keys periodically**:
+
+   - Regularly generate new API keys, especially for production environments
+   - Update keys immediately if there's any suspicion of compromise
+
+5. **Use secrets management for production**:
+   - For production deployments, use a secrets management service
+   - Options include: Vercel Environment Variables, GitHub Secrets, AWS Secrets Manager, etc.
+
+For comprehensive security guidelines, see [SECURITY.md](SECURITY.md).
+
 ## Dependencies
 
 TrackXpense uses a variety of dependencies for both frontend and backend components. For a complete list, see [DEPENDENCIES.md](DEPENDENCIES.md).
