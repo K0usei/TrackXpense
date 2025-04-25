@@ -67,11 +67,11 @@ pip install -r ml/requirements.txt
 6. Start the backend server with HTTPS:
 
 ```bash
-# On Windows
-uvicorn main:app --reload --ssl-keyfile=../certificates/key.pem --ssl-certfile=../certificates/cert.pem --host 0.0.0.0
+# Method 1: Using the start_api.py script (recommended)
+python start_api.py
 
-# On macOS/Linux
-uvicorn main:app --reload --ssl-keyfile=../certificates/key.pem --ssl-certfile=../certificates/cert.pem --host 0.0.0.0
+# Method 2: Using uvicorn directly
+uvicorn main:app --reload --ssl-keyfile=../certificates/localhost-key.pem --ssl-certfile=../certificates/localhost.pem --host 0.0.0.0
 ```
 
 This will start the FastAPI server with HTTPS enabled on port 8000.
