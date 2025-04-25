@@ -57,3 +57,10 @@ backend/venv/
 venv/
 ENV/
 env/
+
+# BFG Repo Cleaner
+..bfg-report/
+bfg.jar
+
+# Development files
+Development Guide.txt
