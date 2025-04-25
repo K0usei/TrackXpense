@@ -1,7 +1,7 @@
 import { ExtractedData, ReceiptData, ReceiptItem } from '@/types/receipt'
 import { getAuth } from 'firebase/auth'
 // Document scanner no longer used - directly using original images for OCR
-import { getApiUrl } from '@/lib/utils/api-url'
+import { getApiUrl } from '@/lib/utils'
 
 export class OCRService {
   private static readonly API_BASE = getApiUrl()

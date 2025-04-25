@@ -60,4 +60,11 @@ export async function compressImage(
   }
 }
 
+/**
+ * Returns the API URL based on environment variables
+ * @returns The API URL for backend services
+ */
+export function getApiUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8000/api'
+}
 
