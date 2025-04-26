@@ -36,32 +36,38 @@ Or start them separately:
 
 ```powershell
 # Start the backend server
-cd backend
-.\start-http.ps1
+.\start-backend.ps1
 
 # Start the frontend server (in a different terminal)
-npm run dev
+.\start-admin.ps1
 ```
 
 ### 4. Accessing the Application
 
-- Local access: http://localhost:3000
-- Network access: http://YOUR_IP_ADDRESS:3000 (replace YOUR_IP_ADDRESS with your actual IP address)
+- Local access: https://localhost:3000
+- Network access: https://YOUR_IP_ADDRESS:3000 (replace YOUR_IP_ADDRESS with your actual IP address)
 
 ## Troubleshooting
 
 If you still encounter issues:
 
 1. Check that the backend server is running:
+
    ```powershell
    Get-Process -Name python* | Where-Object { $_.CommandLine -like "*uvicorn*" }
    ```
 
 2. Verify the backend is accessible:
+
    ```powershell
-   Invoke-WebRequest -Uri "http://localhost:8000/health" -Method GET -UseBasicParsing
+   Invoke-WebRequest -Uri "https://localhost:8000/health" -Method GET -UseBasicParsing -SkipCertificateCheck
    ```
 
 3. Check for CORS issues in the browser developer console (F12)
 
 4. For Firebase authentication issues, add your IP address to the authorized domains in the Firebase console
+
+5. If you encounter certificate issues, ensure your certificates are properly set up:
+   ```powershell
+   mkcert -cert-file certificates/localhost.pem -key-file certificates/localhost-key.pem localhost 127.0.0.1 ::1 *.localhost *.local *.internal *.home.arpa *.home *.lan *.test *.192.168.1.*
+   ```

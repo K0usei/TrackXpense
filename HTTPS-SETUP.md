@@ -36,7 +36,7 @@ This guide explains how to set up and run both the frontend and backend with HTT
 The easiest way to start both servers is to use the provided script:
 
 ```
-.\start-https.ps1
+.\start-all.ps1
 ```
 
 This script will:
@@ -50,25 +50,19 @@ This script will:
 
 ### Backend with HTTPS
 
-1. Navigate to the backend directory:
+Run the backend startup script:
 
-   ```
-   cd backend
-   ```
-
-2. Run the HTTPS startup script:
-   ```
-   .\start-https.ps1
-   ```
+```
+.\start-backend.ps1
+```
 
 ### Frontend with HTTPS
 
-1. Navigate to the project root directory.
+Run the frontend startup script:
 
-2. Run the frontend HTTPS startup script:
-   ```
-   .\start-frontend-https.ps1
-   ```
+```
+.\start-admin.ps1
+```
 
 ## Accessing the Application
 
@@ -77,13 +71,11 @@ This script will:
 
 ## Environment Variables
 
-The `.env.local` file has been updated to use HTTPS URLs:
+The `.env.local` file in the admin directory has been updated to use HTTPS URLs:
 
 ```
-NEXT_PUBLIC_OCR_API_URL=https://localhost:8000/api
-NEXT_PUBLIC_ML_API_URL=https://localhost:8000/api
-NEXT_PUBLIC_BACKEND_URL=https://localhost:8000
 NEXT_PUBLIC_API_URL=https://localhost:8000/api
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ## Troubleshooting

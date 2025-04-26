@@ -1,4 +1,4 @@
-# Start both the frontend and backend servers with HTTPS
+# Start both the frontend and backend servers with HTTP
 
 # Function to check if a port is in use
 function Test-PortInUse {
@@ -8,13 +8,6 @@ function Test-PortInUse {
     
     $connections = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
     return $connections.Count -gt 0
-}
-
-# Check if certificates exist
-if (-not (Test-Path -Path "certificates/localhost.pem") -or -not (Test-Path -Path "certificates/localhost-key.pem")) {
-    Write-Host "Error: SSL certificates not found. Please generate them with:" -ForegroundColor Red
-    Write-Host "mkcert -cert-file certificates/localhost.pem -key-file certificates/localhost-key.pem localhost 127.0.0.1 ::1 *.localhost *.local *.internal *.home.arpa *.home *.lan *.test *.192.168.1.*" -ForegroundColor Yellow
-    exit 1
 }
 
 # Kill any processes using port 8000 (backend)
@@ -60,19 +53,19 @@ if (-not $localIp) {
 }
 
 # Display information
-Write-Host "Starting TrackXpense with HTTPS..." -ForegroundColor Green
+Write-Host "Starting TrackXpense with HTTP..." -ForegroundColor Green
 Write-Host "Frontend will be available at:" -ForegroundColor Cyan
-Write-Host "  - Local:   https://localhost:3000" -ForegroundColor Cyan
-Write-Host "  - Network: https://$localIp`:3000" -ForegroundColor Cyan
+Write-Host "  - Local:   http://localhost:3000" -ForegroundColor Cyan
+Write-Host "  - Network: http://$localIp`:3000" -ForegroundColor Cyan
 Write-Host "Backend will be available at:" -ForegroundColor Cyan
-Write-Host "  - Local:   https://localhost:8000" -ForegroundColor Cyan
-Write-Host "  - Network: https://$localIp`:8000" -ForegroundColor Cyan
+Write-Host "  - Local:   http://localhost:8000" -ForegroundColor Cyan
+Write-Host "  - Network: http://$localIp`:8000" -ForegroundColor Cyan
 Write-Host "API endpoints will be available at:" -ForegroundColor Cyan
-Write-Host "  - Local:   https://localhost:8000/api" -ForegroundColor Cyan
-Write-Host "  - Network: https://$localIp`:8000/api" -ForegroundColor Cyan
+Write-Host "  - Local:   http://localhost:8000/api" -ForegroundColor Cyan
+Write-Host "  - Network: http://$localIp`:8000/api" -ForegroundColor Cyan
 
 # Start the backend server in a new window
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$PSScriptRoot\backend'; .\start-https.ps1"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$PSScriptRoot\backend'; .\start-http.ps1"
 
 # Wait for the backend to start
 Write-Host "Waiting for backend to start..." -ForegroundColor Yellow
@@ -81,4 +74,4 @@ Start-Sleep -Seconds 5
 # Start the frontend server
 Write-Host "Starting frontend..." -ForegroundColor Green
 Set-Location $PSScriptRoot
-node server.js
+.\start-admin-http.ps1

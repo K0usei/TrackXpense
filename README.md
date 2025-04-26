@@ -10,23 +10,70 @@ TrackXpense is an AI-powered expense tracking progressive web application (PWA) 
 - Budget tracking and receipt management
 - AI-powered financial assistant
 
+## Project Structure
+
+TrackXpense is organized into two main components:
+
+- **admin**: Frontend application built with Next.js
+- **backend**: Backend API built with FastAPI
+
 ## Getting Started
+
+### Quick Start
+
+To start both the frontend and backend with HTTPS:
+
+```bash
+# Windows
+.\start-all.ps1
+```
+
+This will start both the frontend and backend servers with HTTPS enabled.
+
+Alternatively, you can start with HTTP for simpler development:
+
+```bash
+# Windows
+.\start-all-http.ps1
+```
+
+This will start both the frontend and backend servers with HTTP enabled.
 
 ### Frontend Setup
 
-First, run the development server with HTTPS enabled:
+1. Navigate to the admin directory:
 
 ```bash
-npm run dev
+cd admin
 ```
 
-This will start the Next.js server with HTTPS enabled on port 3000. The server uses self-signed certificates located in the `certificates` directory.
+2. Install dependencies:
 
-Open [https://localhost:3000](https://localhost:3000) with your browser to see the result.
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Start the frontend server:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# With HTTPS
+..\start-admin.ps1
+
+# With HTTP
+..\start-admin-http.ps1
+
+# Or using Node directly for HTTPS
+node server.js
+
+# Or using Next.js directly for HTTP
+npm run dev:http
+```
+
+For HTTPS, this will start the Next.js server with HTTPS enabled on port 3000. The server uses self-signed certificates located in the `certificates` directory.
+
+For HTTP, this will start the Next.js development server on port 3000.
+
+Open [https://localhost:3000](https://localhost:3000) (HTTPS) or [http://localhost:3000](http://localhost:3000) (HTTP) with your browser to see the result.
 
 ### Backend Setup
 
@@ -55,38 +102,60 @@ source venv/bin/activate
 4. Install dependencies:
 
 ```bash
+# Using pip
 pip install -r requirements.txt
+
+# Using Poetry (recommended)
+poetry install
 ```
 
-5. For ML components, install additional dependencies:
+5. Start the backend server:
 
 ```bash
-pip install -r ml/requirements.txt
-```
+# With HTTPS
+..\start-backend.ps1
 
-6. Start the backend server with HTTPS:
+# With HTTP
+..\start-backend-http.ps1
 
-```bash
-# Method 1: Using the start_api.py script (recommended)
-python start_api.py
+# Or using the scripts directly
+.\start-https.ps1  # For HTTPS
+.\start-http.ps1   # For HTTP
 
-# Method 2: Using uvicorn directly
+# Or using uvicorn directly
+# For HTTPS
 uvicorn main:app --reload --ssl-keyfile=../certificates/localhost-key.pem --ssl-certfile=../certificates/localhost.pem --host 0.0.0.0
+# For HTTP
+uvicorn main:app --reload --host 0.0.0.0
 ```
 
-This will start the FastAPI server with HTTPS enabled on port 8000.
+This will start the FastAPI server on port 8000 with either HTTPS or HTTP enabled.
 
 ### Accessing the Application
+
+When running with HTTPS:
 
 - Frontend: https://localhost:3000
 - Backend API: https://localhost:8000
 
+When running with HTTP:
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+
 To access the application from other devices on your network, use your computer's IP address instead of localhost:
+
+When running with HTTPS:
 
 - Frontend: https://your-ip-address:3000
 - Backend API: https://your-ip-address:8000
 
-Note: Since the application uses self-signed certificates, you may need to accept security warnings in your browser.
+When running with HTTP:
+
+- Frontend: http://your-ip-address:3000
+- Backend API: http://your-ip-address:8000
+
+Note: When using HTTPS, since the application uses self-signed certificates, you may need to accept security warnings in your browser.
 
 ### API Key Management
 

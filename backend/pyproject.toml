@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "trackxpense-backend"
+version = "0.1.0"
+description = "Backend API for TrackXpense application"
+authors = ["TrackXpense Team"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = {extras = ["all"], version = "^0.109.2"}
+uvicorn = "^0.27.1"
+python-multipart = "^0.0.9"
+easyocr = "^1.7.2"
+xgboost = "^3.0.0"
+opencv-python = "^4.9.0"
+numpy = "^1.26.4"
+pillow = "^10.2.0"
+pydantic = "^2.6.3"
+sqlalchemy = "^2.0.29"
+alembic = "^1.13.1"
+python-dotenv = "^1.0.1"
+firebase-admin = "^6.4.0"
+google-generativeai = "^0.4.0"
+celery = {extras = ["redis"], version = "^5.3.6"}
+joblib = "^1.3.2"
+torch = "^2.6.0"
+torchvision = "^0.21.0"
+prisma = "^0.15.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

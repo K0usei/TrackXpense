@@ -9,8 +9,8 @@ const app = next({ dev })
 const handle = app.getRequestHandler()
 
 const httpsOptions = {
-  key: fs.readFileSync('./certificates/localhost-key.pem'),
-  cert: fs.readFileSync('./certificates/localhost.pem')
+  key: fs.readFileSync('../certificates/localhost-key.pem'),
+  cert: fs.readFileSync('../certificates/localhost.pem')
 }
 
 // Get local IP address
@@ -42,5 +42,3 @@ app.prepare().then(() => {
     console.log('  - Environments: \x1b[36m%s\x1b[0m', '.env.local')
   })
 })
-
-
