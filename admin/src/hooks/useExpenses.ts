@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { db } from '@/lib/db'
-import type { Expense } from '@prisma/client'
+import { Expense } from '@/lib/db'
+import axios from 'axios'
+import { getApiUrl } from '@/lib/utils'
 
 export function useExpenses(userId: string | null) {
   const [expenses, setExpenses] = useState<Expense[]>([])
@@ -15,19 +16,9 @@ export function useExpenses(userId: string | null) {
       }
 
       try {
-        const expenseData = await db.expense.findMany({
-          where: {
-            userId: userId
-          },
-          orderBy: {
-            date: 'desc'
-          },
-          include: {
-            category: true
-          }
-        })
-
-        setExpenses(expenseData)
+        // Use API call instead of direct Prisma access
+        const response = await axios.get(`${getApiUrl()}/expenses?userId=${userId}`)
+        setExpenses(response.data)
         setError(null)
       } catch (err) {
         setError('Failed to fetch expenses')
