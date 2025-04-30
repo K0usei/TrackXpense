@@ -31,37 +31,29 @@ This guide explains how to set up and run both the frontend and backend with HTT
 
    This creates wildcard certificates that will work with any local IP address.
 
-## Starting Both Servers with HTTPS
+## Starting Servers with HTTPS
 
-The easiest way to start both servers is to use the provided script:
-
-```
-.\start-all.ps1
-```
-
-This script will:
-
-1. Check if the certificates exist
-2. Free up ports 3000 and 8000 if they're in use
-3. Start the backend server with HTTPS
-4. Start the frontend server with HTTPS
-
-## Starting Servers Individually
+To run the application with HTTPS, you'll need to start both the frontend and backend servers separately.
 
 ### Backend with HTTPS
 
-Run the backend startup script:
+Navigate to the backend directory and run:
 
-```
-.\start-backend.ps1
+```bash
+# Activate the virtual environment if needed
+.\venv\Scripts\activate
+
+# Start the FastAPI server with HTTPS
+uvicorn main:app --reload --ssl-keyfile=../certificates/localhost-key.pem --ssl-certfile=../certificates/localhost.pem --host 0.0.0.0 --port 8000
 ```
 
 ### Frontend with HTTPS
 
-Run the frontend startup script:
+Navigate to the admin directory and run:
 
-```
-.\start-admin.ps1
+```bash
+# Start the Next.js server with HTTPS
+npm run dev
 ```
 
 ## Accessing the Application
@@ -71,7 +63,7 @@ Run the frontend startup script:
 
 ## Environment Variables
 
-The `.env.local` file in the admin directory has been updated to use HTTPS URLs:
+The `.env.local` file in the admin directory should be updated to use HTTPS URLs:
 
 ```
 NEXT_PUBLIC_API_URL=https://localhost:8000/api

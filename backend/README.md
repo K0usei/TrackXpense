@@ -66,21 +66,21 @@ python seed.py
 Start the server with HTTPS:
 
 ```bash
-# Using the start-https.ps1 script (Windows)
-.\start-https.ps1
+# Activate the virtual environment if needed
+.\venv\Scripts\activate
 
-# Using Python directly
-uvicorn main:app --reload --ssl-keyfile=../certificates/localhost-key.pem --ssl-certfile=../certificates/localhost.pem --host 0.0.0.0
+# Start with HTTPS
+uvicorn main:app --reload --ssl-keyfile=../certificates/localhost-key.pem --ssl-certfile=../certificates/localhost.pem --host 0.0.0.0 --port 8000
 ```
 
 Or start without HTTPS for development:
 
 ```bash
-# Using the start-http.ps1 script (Windows)
-.\start-http.ps1
+# Activate the virtual environment if needed
+.\venv\Scripts\activate
 
-# Using Python directly
-uvicorn main:app --reload --host 0.0.0.0
+# Start with HTTP
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## API Endpoints
@@ -109,6 +109,15 @@ uvicorn main:app --reload --host 0.0.0.0
 ### Database Management
 
 #### Using Prisma (Recommended)
+
+You can use the provided script to handle all Prisma operations at once:
+
+```bash
+# Generate Prisma client, run migrations, and seed the database
+.\generate-prisma.ps1
+```
+
+Or run the commands individually:
 
 ```bash
 # Generate Prisma client

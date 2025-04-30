@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { db } from '@/lib/firebase'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore'
 import { useAuth } from '@/hooks/useAuth'
 import {
   startOfDay,
@@ -76,76 +76,83 @@ export function useBudgetData(timeframe: 'daily' | 'weekly' | 'monthly') {
         const expensesSnapshot = await getDocs(expensesQuery)
         const expenses = expensesSnapshot.docs.map(doc => doc.data())
 
-        // Fetch user's budget settings
-        const userDoc = await getDocs(query(
-          collection(db, 'users'),
-          where('uid', '==', user.uid)
-        ))
+        // Fetch user's budget settings directly by document ID
+        try {
+          const userDocRef = doc(db, 'users', user.uid)
+          const userDocSnap = await getDoc(userDocRef)
 
-        // Check if user document exists
-        if (userDoc.empty) {
-          console.error('User document not found for uid:', user.uid)
+          // Check if user document exists
+          if (!userDocSnap.exists()) {
+            console.error('User document not found for uid:', user.uid)
+            setData(prev => ({
+              ...prev,
+              loading: false,
+              error: 'User profile not found. Please set up your profile first.'
+            }))
+            return
+          }
+
+          const userData = userDocSnap.data()
+          const userSettings = userData.settings || {}
+          const monthlyBudget = userSettings.monthlyBudget || 0
+          const budgetLimits = userSettings.budgetLimits || {}
+          const currency = userSettings.currency || 'PHP'
+
+          // Don't adjust budget limits based on timeframe - they should remain the same
+          // regardless of the selected timeframe
+          const adjustedBudgetLimits = Object.entries(budgetLimits).reduce((acc, [category, amount]) => {
+            acc[category] = Number(amount)
+            return acc
+          }, {} as Record<string, number>)
+
+          // Calculate spending by category
+          const categorySpending = expenses.reduce((acc, expense) => {
+            const category = expense.category
+            if (!acc[category]) {
+              acc[category] = 0
+            }
+            acc[category] += expense.amount
+            return acc
+          }, {} as Record<string, number>)
+
+          // Format data for return
+          const categories = Object.entries(adjustedBudgetLimits).map(([category, budget]) => {
+            // Convert snake_case to display format
+            const displayName = category
+              .split('_')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ')
+              .replace('Food Dining', 'Food & Dining')
+              .replace('Bills Utilities', 'Bills & Utilities')
+
+            return {
+              name: displayName,
+              spent: categorySpending[category] || 0,
+              budget: Number(budget)
+            }
+          })
+
+          // Use the budget from user settings - not affected by timeframe
+          const totalBudget = monthlyBudget
+          // Total spent is based on the selected timeframe
+          const totalSpent = Object.values(categorySpending).reduce((sum, amount) => sum + amount, 0)
+
+          setData({
+            totalBudget,
+            totalSpent,
+            categories,
+            loading: false,
+            error: null,
+            currency: currency || 'PHP'
+          })
+        } catch (userDocError) {
+          console.error('Error fetching user document:', userDocError)
           setData(prev => ({
             ...prev,
             loading: false,
-            error: 'User profile not found. Please set up your profile first.'
+            error: 'Failed to fetch user profile. Please check your connection and try again.'
           }))
-          return
         }
-
-        const userData = userDoc.docs[0].data()
-        const userSettings = userData.settings || {}
-        const monthlyBudget = userSettings.monthlyBudget || 0
-        const budgetLimits = userSettings.budgetLimits || {}
-        const currency = userSettings.currency || 'PHP'
-
-        // Don't adjust budget limits based on timeframe - they should remain the same
-        // regardless of the selected timeframe
-        const adjustedBudgetLimits = Object.entries(budgetLimits).reduce((acc, [category, amount]) => {
-          acc[category] = Number(amount)
-          return acc
-        }, {} as Record<string, number>)
-
-        // Calculate spending by category
-        const categorySpending = expenses.reduce((acc, expense) => {
-          const category = expense.category
-          if (!acc[category]) {
-            acc[category] = 0
-          }
-          acc[category] += expense.amount
-          return acc
-        }, {} as Record<string, number>)
-
-        // Format data for return
-        const categories = Object.entries(adjustedBudgetLimits).map(([category, budget]) => {
-          // Convert snake_case to display format
-          const displayName = category
-            .split('_')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ')
-            .replace('Food Dining', 'Food & Dining')
-            .replace('Bills Utilities', 'Bills & Utilities')
-
-          return {
-            name: displayName,
-            spent: categorySpending[category] || 0,
-            budget: Number(budget)
-          }
-        })
-
-        // Use the budget from user settings - not affected by timeframe
-        const totalBudget = monthlyBudget
-        // Total spent is based on the selected timeframe
-        const totalSpent = Object.values(categorySpending).reduce((sum, amount) => sum + amount, 0)
-
-        setData({
-          totalBudget,
-          totalSpent,
-          categories,
-          loading: false,
-          error: null,
-          currency: currency || 'PHP'
-        })
       } catch (error) {
         console.error('Error fetching budget data:', error)
         setData(prev => ({

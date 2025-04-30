@@ -25,21 +25,26 @@ This document provides solutions for common connection issues between the fronte
 
 ### 3. Starting the Servers
 
-To start both the frontend and backend servers:
+Start the backend and frontend servers separately:
 
 ```powershell
-# Run the start-all.ps1 script
-.\start-all.ps1
+# Start the backend server (from the backend directory)
+cd backend
+# Activate the virtual environment if needed
+.\venv\Scripts\activate
+# With HTTPS
+uvicorn main:app --reload --ssl-keyfile=../certificates/localhost-key.pem --ssl-certfile=../certificates/localhost.pem --host 0.0.0.0 --port 8000
+# Or with HTTP
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Or start them separately:
-
 ```powershell
-# Start the backend server
-.\start-backend.ps1
-
-# Start the frontend server (in a different terminal)
-.\start-admin.ps1
+# Start the frontend server (from the admin directory)
+cd admin
+# With HTTPS
+npm run dev
+# Or with HTTP
+npm run dev:http
 ```
 
 ### 4. Accessing the Application

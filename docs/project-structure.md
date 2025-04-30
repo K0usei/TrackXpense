@@ -8,6 +8,7 @@ TrackXpense is organized into two main components:
 
 - **admin**: Frontend application built with Next.js
 - **backend**: Backend API built with FastAPI
+- **docs**: Project documentation
 
 ## Frontend (Next.js)
 
@@ -52,6 +53,7 @@ The frontend is built with Next.js and is organized as follows:
 - **`server.js`**: Custom HTTPS server for Next.js
 - **`tailwind.config.ts`**: Tailwind CSS configuration
 - **`tsconfig.json`**: TypeScript configuration
+- **`reinstall-deps.ps1`**: Script to clean and reinstall dependencies
 
 ## Backend (FastAPI)
 
@@ -81,22 +83,30 @@ The backend is built with FastAPI and is organized as follows:
 
 - **`/alembic`**: Database migrations
 - **`/data`**: Data files and samples
-
+- **`/prisma`**: Prisma schema and migrations
 - **`/scripts`**: Utility scripts
 - **`/tasks`**: Background tasks
+  - **`run_retraining.ps1`**: Script to run model retraining
 - **`/uploads`**: Uploaded files storage
 
 - **`main.py`**: FastAPI application entry point
 - **`pyproject.toml`**: Python dependencies (Poetry)
 - **`requirements.txt`**: Python dependencies (pip)
-- **`start-http.ps1`**: Script to start the backend with HTTP
-- **`start-https.ps1`**: Script to start the backend with HTTPS
-- **`start_api.py`**: Script to start the backend API with HTTPS
+- **`generate-prisma.ps1`**: Script to generate Prisma client and run migrations
 
 ## Root Directory
 
 - **`/certificates`**: SSL certificates for HTTPS
+- **`/docs`**: Project documentation
+  - **`README.md`**: Documentation index
+  - **`getting-started.md`**: Getting started guide
+  - **`project-structure.md`**: Project structure overview
+  - **`https-setup.md`**: HTTPS setup guide
+  - **`connection-issues.md`**: Connection troubleshooting
+  - **`frontend.md`**: Frontend documentation
+  - **`backend.md`**: Backend documentation
+  - **`ml.md`**: Machine learning documentation
+  - **`utility-scripts.md`**: Utility scripts documentation
 - **`README.md`**: Project documentation
-- **`start-admin.ps1`**: Script to start the frontend
-- **`start-backend.ps1`**: Script to start the backend
-- **`start-all.ps1`**: Script to start both frontend and backend
+- **`install-all.ps1`**: Script to install all dependencies
+- **`clean-install-and-start.ps1`**: Script to clean install dependencies

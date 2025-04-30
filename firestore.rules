@@ -1,0 +1,80 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow authenticated users to read and write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Allow users to query the users collection
+    match /users {
+      allow list: if request.auth != null && request.query.limit <= 10;        
+    }
+
+    // Allow users to read and write their own expenses
+    match /expenses/{expenseId} {
+      allow read, write: if request.auth != null && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+    }
+
+    // Allow users to read and write their own budgets
+    match /budgets/{budgetId} {
+      allow read, write: if request.auth != null && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+    }
+
+    // Allow users to read and write their own receipts
+    match /receipts/{receiptId} {
+      allow read, write: if request.auth != null && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+    }
+
+    // Allow users to read and write their own chat messages
+    match /chatMessages/{messageId} {
+      allow read, write: if request.auth != null && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+    }
+
+    // Allow users to read and write their own financial insights
+    match /financialInsights/{insightId} {
+      allow read, write: if request.auth != null && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+    }
+
+    // Allow users to read and write their own notifications
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+    }
+
+    // Allow read access to categories for all authenticated users
+    match /categories/{categoryId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Allow users to access their own nested conversations
+    match /users/{userId}/conversations/{conversationId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Allow read access to root-level conversations for authenticated users (if any)
+    match /conversations/{conversationId} {
+      allow read, write: if request.auth != null && (
+        resource == null || resource.data.userId == request.auth.uid
+      );
+    }
+
+    // Fallback rule - deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

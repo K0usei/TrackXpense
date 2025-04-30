@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { db } from '@/lib/firebase'
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
+import { collection, query, where, getDocs, orderBy, doc, getDoc } from 'firebase/firestore'
 import { useAuth } from '@/hooks/useAuth'
 import {
   startOfDay,
@@ -51,23 +51,28 @@ export function useExpenseData(timeframe: 'daily' | 'weekly' | 'monthly') {
       }
 
       try {
-        // Get user settings for currency
-        const userQuery = query(collection(db, 'users'), where('uid', '==', user.uid))
-        const userSnapshot = await getDocs(userQuery)
-
-        // Check if user document exists
-        if (userSnapshot.empty) {
-          console.error('User document not found for uid:', user.uid)
-          setError('User profile not found. Please set up your profile first.')
-          setLoading(false)
-          return
-        }
-
-        // Get currency from user settings
+        // Get user settings for currency directly by document ID
         let currency = 'PHP'
-        const userData = userSnapshot.docs[0].data()
-        if (userData.settings && userData.settings.currency) {
-          currency = userData.settings.currency
+        try {
+          const userDocRef = doc(db, 'users', user.uid)
+          const userDocSnap = await getDoc(userDocRef)
+
+          // Check if user document exists
+          if (!userDocSnap.exists()) {
+            console.error('User document not found for uid:', user.uid)
+            setError('User profile not found. Please set up your profile first.')
+            setLoading(false)
+            return
+          }
+
+          // Get currency from user settings
+          const userData = userDocSnap.data()
+          if (userData.settings && userData.settings.currency) {
+            currency = userData.settings.currency
+          }
+        } catch (userDocError) {
+          console.error('Error fetching user document:', userDocError)
+          // Continue with default currency
         }
 
         // Get date range based on timeframe

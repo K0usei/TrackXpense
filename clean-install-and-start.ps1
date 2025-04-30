@@ -18,6 +18,10 @@ npm install
 # Return to root directory
 Set-Location $PSScriptRoot
 
-# Start the application with HTTP
-Write-Host "Starting the application with HTTP..." -ForegroundColor Cyan
-.\start-all-http.ps1
+# Start the application
+Write-Host "Starting the application..." -ForegroundColor Cyan
+Write-Host "Please start the backend and frontend servers separately:" -ForegroundColor Yellow
+Write-Host "  Backend (HTTP): cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000" -ForegroundColor Cyan
+Write-Host "  Backend (HTTPS): cd backend && uvicorn main:app --reload --ssl-keyfile=../certificates/localhost-key.pem --ssl-certfile=../certificates/localhost.pem --host 0.0.0.0 --port 8000" -ForegroundColor Cyan
+Write-Host "  Frontend (HTTP): cd admin && npm run dev:http" -ForegroundColor Cyan
+Write-Host "  Frontend (HTTPS): cd admin && npm run dev" -ForegroundColor Cyan

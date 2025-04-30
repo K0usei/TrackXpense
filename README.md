@@ -16,28 +16,11 @@ TrackXpense is organized into two main components:
 
 - **admin**: Frontend application built with Next.js
 - **backend**: Backend API built with FastAPI
+- **docs**: Project documentation
+
+For detailed documentation, see the [docs](docs/README.md) directory.
 
 ## Getting Started
-
-### Quick Start
-
-To start both the frontend and backend with HTTPS:
-
-```bash
-# Windows
-.\start-all.ps1
-```
-
-This will start both the frontend and backend servers with HTTPS enabled.
-
-Alternatively, you can start with HTTP for simpler development:
-
-```bash
-# Windows
-.\start-all-http.ps1
-```
-
-This will start both the frontend and backend servers with HTTP enabled.
 
 ### Frontend Setup
 
@@ -57,16 +40,12 @@ npm install
 
 ```bash
 # With HTTPS
-..\start-admin.ps1
+npm run dev
 
 # With HTTP
-..\start-admin-http.ps1
-
-# Or using Node directly for HTTPS
-node server.js
-
-# Or using Next.js directly for HTTP
 npm run dev:http
+# or
+next dev
 ```
 
 For HTTPS, this will start the Next.js server with HTTPS enabled on port 3000. The server uses self-signed certificates located in the `certificates` directory.
@@ -113,20 +92,10 @@ poetry install
 
 ```bash
 # With HTTPS
-..\start-backend.ps1
+uvicorn main:app --reload --ssl-keyfile=../certificates/localhost-key.pem --ssl-certfile=../certificates/localhost.pem --host 0.0.0.0 --port 8000
 
 # With HTTP
-..\start-backend-http.ps1
-
-# Or using the scripts directly
-.\start-https.ps1  # For HTTPS
-.\start-http.ps1   # For HTTP
-
-# Or using uvicorn directly
-# For HTTPS
-uvicorn main:app --reload --ssl-keyfile=../certificates/localhost-key.pem --ssl-certfile=../certificates/localhost.pem --host 0.0.0.0
-# For HTTP
-uvicorn main:app --reload --host 0.0.0.0
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 This will start the FastAPI server on port 8000 with either HTTPS or HTTP enabled.
@@ -213,11 +182,41 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trackxpense
    - For production deployments, use a secrets management service
    - Options include: Vercel Environment Variables, GitHub Secrets, AWS Secrets Manager, etc.
 
-For comprehensive security guidelines, see [SECURITY.md](SECURITY.md).
+For comprehensive security guidelines, see [Security Guidelines](docs/security.md).
 
 ## Dependencies
 
-TrackXpense uses a variety of dependencies for both frontend and backend components. For a complete list, see [DEPENDENCIES.md](DEPENDENCIES.md).
+TrackXpense uses a variety of dependencies for both frontend and backend components. For a complete list, see [Dependencies](docs/dependencies.md).
+
+### Utility Scripts
+
+The project includes several utility scripts to help with common tasks:
+
+#### Installation Scripts
+
+```bash
+# Install all dependencies for both frontend and backend
+.\install-all.ps1
+
+# Clean install frontend dependencies
+.\clean-install-and-start.ps1
+```
+
+#### Backend Scripts
+
+```bash
+# Generate Prisma client, run migrations, and seed the database
+cd backend
+.\generate-prisma.ps1
+```
+
+#### Frontend Scripts
+
+```bash
+# Clean and reinstall frontend dependencies
+cd admin
+.\reinstall-deps.ps1
+```
 
 ### Checking Dependencies
 
@@ -231,19 +230,19 @@ node scripts/check-dependencies.js
 python backend/scripts/check_dependencies.py
 ```
 
-## Project Structure
+## Documentation
 
-For a detailed overview of the project structure, see [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
+For comprehensive documentation, please refer to the [docs](docs/README.md) directory, which includes:
 
-For a visual map of components and their relationships, see [COMPONENT_MAP.md](COMPONENT_MAP.md).
-
-Key directories:
-
-- [Frontend Components](src/components/README.md)
-- [Frontend Utilities](src/lib/README.md)
-- [Frontend Services](src/lib/services/README.md)
-- [Backend Application](backend/app/README.md)
-- [Machine Learning Models](backend/ml/README.md)
+- [Getting Started Guide](docs/getting-started.md)
+- [Project Structure](docs/project-structure.md)
+- [HTTPS Setup](docs/https-setup.md)
+- [Connection Issues](docs/connection-issues.md)
+- [Frontend Documentation](docs/frontend.md)
+- [Backend Documentation](docs/backend.md)
+- [Machine Learning Documentation](docs/ml.md)
+- [API Documentation](docs/api.md)
+- [Utility Scripts](docs/utility-scripts.md)
 
 ## Learn More
 

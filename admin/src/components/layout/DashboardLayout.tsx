@@ -11,10 +11,8 @@ import {
     Wallet,
     Bell,
     User,
-    Settings,
     Image as ImageIcon,
     LogOut,
-    Receipt,
 } from 'lucide-react'
 import { NotificationsList } from '@/components/notifications/notifications-list'
 import { fetchNotifications } from '@/lib/services/notification-service'
@@ -22,13 +20,13 @@ import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { Logo } from "@/components/ui/logo"
 import { useAuth } from "@/contexts/AuthContext"
-import { useTheme } from "next-themes"
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
-import { useMediaQuery } from "@/hooks/useMediaQuery"
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -41,7 +39,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const pathname = usePathname()
     const [open, setOpen] = useState(false)
     const { user, signOut } = useAuth()
-    const { theme, setTheme } = useTheme()
+
     const [showNotifications, setShowNotifications] = useState(false)
     const [unreadCount, setUnreadCount] = useState(0)
 
@@ -134,8 +132,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Mobile Header */}
-            <header className="lg:hidden flex items-center justify-between p-3 sm:p-4 border-b">
+            {/* Mobile Header - Fixed at top */}
+            <header className="lg:hidden fixed top-0 left-0 right-0 flex items-center justify-between p-3 sm:p-4 border-b bg-background z-50">
                 <Link href="/dashboard" className="text-xl">
                     <Logo size="sm" className="sm:text-xl" />
                 </Link>
@@ -209,8 +207,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* Desktop Layout */}
             <div className="hidden lg:flex flex-col h-screen">
-                {/* Desktop Header */}
-                <header className="border-b">
+                {/* Desktop Header - Sticky */}
+                <header className="border-b sticky top-0 bg-background z-50">
                     <div className="flex items-center justify-between px-4 py-3 xl:px-6 xl:py-4">
                         <Link href="/dashboard" className="text-xl">
                             <Logo size="md" />
@@ -220,8 +218,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </header>
 
                 <div className="flex flex-1 overflow-hidden">
-                    {/* Left Sidebar */}
-                    <aside className="w-56 xl:w-64 border-r overflow-y-auto">
+                    {/* Left Sidebar - Sticky */}
+                    <aside className="w-56 xl:w-64 border-r overflow-y-auto sticky top-[57px] max-h-[calc(100vh-57px)]">
                         <nav className="space-y-1 p-3 xl:p-4">
                             {navItems.map((item) => (
                                 <NavLink key={item.href} {...item} />
@@ -236,9 +234,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         </div>
                     </main>
 
-                    {/* Right Sidebar - hide on scanner page */}
+                    {/* Right Sidebar - hide on scanner page - Sticky */}
                     {pathname !== '/scanner' && (
-                        <aside className="w-64 border-l overflow-y-auto">
+                        <aside className="w-64 border-l overflow-y-auto sticky top-[57px] max-h-[calc(100vh-57px)]">
                             <div className="p-4">
                                 <div className="flex items-center space-x-3 mb-6">
                                     <Avatar className="h-10 w-10">
@@ -307,10 +305,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </nav>
             )}
 
-            {/* Mobile Content - Adjust margin only when navbar is visible */}
+            {/* Mobile Content - Adjust margin for fixed header and bottom navbar */}
             <div className={cn(
                 "lg:hidden flex-1 container mx-auto p-3 sm:p-4",
-                !isScanner && "mb-20 sm:mb-24"
+                "mt-16 sm:mt-20", // Add top margin for fixed header
+                !isScanner && "mb-20 sm:mb-24" // Add bottom margin for bottom navbar
             )}>
                 {children}
             </div>

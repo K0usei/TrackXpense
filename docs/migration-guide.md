@@ -14,18 +14,21 @@ TrackXpense has been restructured to follow a cleaner separation of concerns:
 ### For Developers
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/yourusername/TrackXpense.git
    cd TrackXpense
    ```
 
 2. **Set up the frontend**:
+
    ```bash
    cd admin
    npm install
    ```
 
 3. **Set up the backend**:
+
    ```bash
    cd ../backend
    python -m venv venv
@@ -37,14 +40,29 @@ TrackXpense has been restructured to follow a cleaner separation of concerns:
    ```
 
 4. **Configure environment variables**:
+
    - Copy `.env.example` to `.env.local` in the admin directory
    - Copy `.env.example` to `.env` in the backend directory
    - Update the environment variables with your API keys and configuration
 
 5. **Start the application**:
+
    ```bash
-   # From the root directory
-   .\start-all.ps1
+   # Start the backend
+   cd backend
+   # Activate the virtual environment if needed
+   .\venv\Scripts\activate
+   # With HTTPS
+   uvicorn main:app --reload --ssl-keyfile=../certificates/localhost-key.pem --ssl-certfile=../certificates/localhost.pem --host 0.0.0.0 --port 8000
+   # Or with HTTP
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+   # In a separate terminal, start the frontend
+   cd admin
+   # With HTTPS
+   npm run dev
+   # Or with HTTP
+   npm run dev:http
    ```
 
 ### For Users
@@ -89,10 +107,12 @@ This can be configured using the `NEXT_PUBLIC_API_URL` environment variable.
 If you encounter issues after the migration:
 
 1. **API Connection Issues**:
+
    - Check that the backend is running on port 8000
    - Verify that the `NEXT_PUBLIC_API_URL` is set correctly in the frontend
 
 2. **Missing Dependencies**:
+
    - Run `npm install` in the admin directory
    - Run `pip install -r requirements.txt` in the backend directory
 
