@@ -184,7 +184,7 @@ export function DashboardStats({
                                 Remaining Balance
                             </p>
                             <div className="inline-flex items-center mt-0.5 px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full bg-lime-500/10 text-lime-600 dark:text-lime-400 border border-lime-500/20">
-                                {timeframe === 'daily' ? 'Today' : timeframe === 'weekly' ? 'This Week' : 'This Month'}
+                                Monthly
                             </div>
                         </div>
                         <PiggyBank

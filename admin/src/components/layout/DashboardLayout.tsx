@@ -43,8 +43,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const [showNotifications, setShowNotifications] = useState(false)
     const [unreadCount, setUnreadCount] = useState(0)
 
-    // Check if current page is scanner
+    // Check if current page is scanner or assistant
     const isScanner = pathname === '/scanner'
+    const isAssistant = pathname === '/assistant'
 
     // Fetch unread notifications count
     const fetchUnreadCount = async () => {
@@ -132,94 +133,101 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Mobile Header - Fixed at top */}
-            <header className="lg:hidden fixed top-0 left-0 right-0 flex items-center justify-between p-3 sm:p-4 border-b bg-background z-50">
-                <Link href="/dashboard" className="text-xl">
-                    <Logo size="sm" className="sm:text-xl" />
-                </Link>
+            {/* Mobile Header - Fixed at top - Hide on scanner page */}
+            {!isScanner && (
+                <header className="lg:hidden fixed top-0 left-0 right-0 flex items-center justify-between p-3 sm:p-4 border-b bg-background z-50">
+                    <Link href="/dashboard" className="text-xl">
+                        <Logo size="sm" className="sm:text-xl" />
+                    </Link>
 
-                <div className="flex items-center gap-1 sm:gap-2">
-                    <ThemeToggle />
-                    <Sheet open={open} onOpenChange={setOpen}>
-                        <SheetTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-foreground hover:text-blue-500 h-9 w-9 sm:h-10 sm:w-10"
-                            >
-                                <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent>
-                            <SheetHeader className="border-b pb-4">
-                                <SheetTitle>
-                                    <div className="flex items-center space-x-4">
-                                        <Avatar className="h-10 w-10">
-                                            <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || ''} />
-                                            <AvatarFallback className="text-blue-500">{user?.displayName?.[0] || user?.email?.[0]}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="space-y-1 overflow-hidden max-w-[200px]">
-                                            <h2 className="text-base font-semibold text-foreground truncate">
-                                                {user?.displayName || user?.email}
-                                            </h2>
-                                            <p className="text-xs text-muted-foreground truncate">
-                                                {user?.email}
-                                            </p>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                        <ThemeToggle />
+                        <Sheet open={open} onOpenChange={setOpen}>
+                            <SheetTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-foreground hover:text-blue-500 h-9 w-9 sm:h-10 sm:w-10"
+                                >
+                                    <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent>
+                                <SheetHeader className="border-b pb-4">
+                                    <SheetTitle>
+                                        <div className="flex items-center space-x-4">
+                                            <Avatar className="h-10 w-10">
+                                                <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || ''} />
+                                                <AvatarFallback className="text-blue-500">{user?.displayName?.[0] || user?.email?.[0]}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="space-y-1 overflow-hidden max-w-[200px]">
+                                                <h2 className="text-base font-semibold text-foreground truncate">
+                                                    {user?.displayName || user?.email}
+                                                </h2>
+                                                <p className="text-xs text-muted-foreground truncate">
+                                                    {user?.email}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
-                                </SheetTitle>
-                            </SheetHeader>
-                            <nav className="py-4">
-                                {userNavItems.map((item) => (
-                                    <NavLink key={item.href} {...item} onClick={() => setOpen(false)} />
-                                ))}
-                                <button
-                                    onClick={() => {
-                                        handleNotificationsClick()
-                                        setOpen(false)
-                                    }}
-                                    className="flex w-full items-center gap-3 px-3 py-2 hover:bg-accent hover:text-accent-foreground rounded-md relative"
-                                >
-                                    <Bell className="h-5 w-5" />
-                                    <span className="font-medium">Notifications</span>
-                                    {unreadCount > 0 && (
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-medium text-white">
-                                            {unreadCount}
-                                        </span>
-                                    )}
-                                </button>
-                                <Separator className="my-2" />
-                                <button
-                                    onClick={() => {
-                                        handleSignOut()
-                                        setOpen(false)
-                                    }}
-                                    className="flex w-full items-center gap-3 px-3 py-2 hover:bg-accent rounded-md text-destructive hover:text-destructive"
-                                >
-                                    <LogOut className="h-5 w-5" />
-                                    <span className="font-medium">Logout</span>
-                                </button>
-                            </nav>
-                        </SheetContent>
-                    </Sheet>
-                </div>
-            </header>
+                                    </SheetTitle>
+                                </SheetHeader>
+                                <nav className="py-4">
+                                    {userNavItems.map((item) => (
+                                        <NavLink key={item.href} {...item} onClick={() => setOpen(false)} />
+                                    ))}
+                                    <button
+                                        onClick={() => {
+                                            handleNotificationsClick()
+                                            setOpen(false)
+                                        }}
+                                        className="flex w-full items-center gap-3 px-3 py-2 hover:bg-accent hover:text-accent-foreground rounded-md relative"
+                                    >
+                                        <Bell className="h-5 w-5" />
+                                        <span className="font-medium">Notifications</span>
+                                        {unreadCount > 0 && (
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-medium text-white">
+                                                {unreadCount}
+                                            </span>
+                                        )}
+                                    </button>
+                                    <Separator className="my-2" />
+                                    <button
+                                        onClick={() => {
+                                            handleSignOut()
+                                            setOpen(false)
+                                        }}
+                                        className="flex w-full items-center gap-3 px-3 py-2 hover:bg-accent rounded-md text-destructive hover:text-destructive"
+                                    >
+                                        <LogOut className="h-5 w-5" />
+                                        <span className="font-medium">Logout</span>
+                                    </button>
+                                </nav>
+                            </SheetContent>
+                        </Sheet>
+                    </div>
+                </header>
+            )}
 
             {/* Desktop Layout */}
             <div className="hidden lg:flex flex-col h-screen">
-                {/* Desktop Header - Sticky */}
-                <header className="border-b sticky top-0 bg-background z-50">
-                    <div className="flex items-center justify-between px-4 py-3 xl:px-6 xl:py-4">
-                        <Link href="/dashboard" className="text-xl">
-                            <Logo size="md" />
-                        </Link>
-                        <ThemeToggle />
-                    </div>
-                </header>
+                {/* Desktop Header - Sticky - Hide on scanner page */}
+                {!isScanner && (
+                    <header className="border-b sticky top-0 bg-background z-50">
+                        <div className="flex items-center justify-between px-4 py-3 xl:px-6 xl:py-4">
+                            <Link href="/dashboard" className="text-xl">
+                                <Logo size="md" />
+                            </Link>
+                            <ThemeToggle />
+                        </div>
+                    </header>
+                )}
 
                 <div className="flex flex-1 overflow-hidden">
                     {/* Left Sidebar - Sticky */}
-                    <aside className="w-56 xl:w-64 border-r overflow-y-auto sticky top-[57px] max-h-[calc(100vh-57px)]">
+                    <aside className={cn(
+                        "w-56 xl:w-64 border-r overflow-y-auto sticky",
+                        isScanner || isAssistant ? "top-0 max-h-screen" : "top-[57px] max-h-[calc(100vh-57px)]"
+                    )}>
                         <nav className="space-y-1 p-3 xl:p-4">
                             {navItems.map((item) => (
                                 <NavLink key={item.href} {...item} />
@@ -228,15 +236,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     </aside>
 
                     {/* Main Content */}
-                    <main className="flex-1 overflow-y-auto">
-                        <div className="p-4 xl:p-6">
+                    <main className={cn(
+                        "flex-1",
+                        !isAssistant && "overflow-y-auto"
+                    )}>
+                        <div className={cn(
+                            isAssistant ? "p-0" : "p-4 xl:p-6"
+                        )}>
                             {children}
                         </div>
                     </main>
 
                     {/* Right Sidebar - hide on scanner page - Sticky */}
                     {pathname !== '/scanner' && (
-                        <aside className="w-64 border-l overflow-y-auto sticky top-[57px] max-h-[calc(100vh-57px)]">
+                        <aside className={cn(
+                            "w-64 border-l overflow-y-auto sticky",
+                            isScanner ? "top-0 max-h-screen" : "top-[57px] max-h-[calc(100vh-57px)]"
+                        )}>
                             <div className="p-4">
                                 <div className="flex items-center space-x-3 mb-6">
                                     <Avatar className="h-10 w-10">
@@ -308,7 +324,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Mobile Content - Adjust margin for fixed header and bottom navbar */}
             <div className={cn(
                 "lg:hidden flex-1 container mx-auto p-3 sm:p-4",
-                "mt-16 sm:mt-20", // Add top margin for fixed header
+                !isScanner ? "mt-16 sm:mt-20" : "mt-0", // Add top margin for fixed header only when not on scanner page
                 !isScanner && "mb-20 sm:mb-24" // Add bottom margin for bottom navbar
             )}>
                 {children}

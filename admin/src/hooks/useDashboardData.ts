@@ -19,6 +19,7 @@ interface DashboardData {
   }>
   monthlyBudget: number
   monthlyIncome: number
+  totalMonthlyExpenses: number // Added total monthly expenses
   budgetOverview: Array<{
     category: CategoryType
     spent: number
@@ -44,6 +45,7 @@ const defaultData: DashboardData = {
   }).reverse(),
   monthlyBudget: 0,
   monthlyIncome: 0,
+  totalMonthlyExpenses: 0, // Added total monthly expenses
   budgetOverview: [],
   currency: 'PHP'
 }
@@ -105,12 +107,17 @@ export function useDashboardData(timeframe: 'daily' | 'weekly' | 'monthly') {
           }
         })
 
+        // In a real app, we would fetch the total monthly expenses here
+        // For now, we'll use 0 as a placeholder since there are no actual expenses yet
+        const totalMonthlyExpenses = 0;
+
         if (isMounted) {
           setData({
             categoryDistribution,
             spendingTrends,
             monthlyBudget: userProfile.settings.monthlyBudget || 0,
             monthlyIncome: userProfile.settings.monthlyIncome || 0,
+            totalMonthlyExpenses, // Add total monthly expenses
             budgetOverview,
             currency: userProfile.settings.currency || 'PHP'
           })

@@ -9,10 +9,10 @@ export class OCRService {
   static async processReceipt(image: File): Promise<ExtractedData> {
     console.log('Starting receipt processing for image:', image.name, 'size:', image.size);
 
-    // Use the original image with minimal preprocessing for OCR
-    // This preserves image quality while enhancing text visibility
+    // Use the original image for backend processing
+    // The backend will apply advanced preprocessing including deskewing and enhancement
     let processedImage = image;
-    console.log('Using original image with minimal preprocessing for text extraction with EasyOCR');
+    console.log('Sending original image to backend for advanced preprocessing and OCR extraction');
 
     // Create a URL for the image for fallback display
     const imageUrl = URL.createObjectURL(processedImage);
@@ -229,9 +229,74 @@ export class OCRService {
     const base64Response = await fetch(imageData)
     const blob = await base64Response.blob()
 
-    // Create a File object and return it directly without document scan conversion
-    // This preserves the original image quality for better OCR results
-    return new File([blob], 'receipt.jpg', { type: 'image/jpeg' })
+    try {
+      // Create a canvas for preprocessing
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+
+      // Load the image
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = (e) => {
+          console.error('Failed to load image for preprocessing:', e);
+          reject(new Error('Failed to load image'));
+        };
+        img.src = imageData;
+      });
+
+      // Set canvas dimensions
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        console.warn('Could not get canvas context for preprocessing, using original image');
+        return new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
+      }
+
+      // Draw the image on the canvas
+      ctx.drawImage(img, 0, 0);
+
+      // Apply basic preprocessing to enhance text visibility
+      // This is just to improve the image before sending to backend
+      // The backend will apply more advanced preprocessing
+      try {
+        // Increase contrast slightly
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        // Apply simple contrast enhancement
+        for (let i = 0; i < data.length; i += 4) {
+          // Enhance contrast slightly
+          for (let j = 0; j < 3; j++) {
+            // Apply a simple contrast enhancement
+            const value = data[i + j];
+            data[i + j] = value < 128 ? value * 0.8 : Math.min(255, value * 1.2);
+          }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        console.log('Applied basic contrast enhancement for preprocessing');
+
+        // Convert canvas to blob
+        const preprocessedBlob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('Failed to convert canvas to blob'));
+          }, 'image/jpeg', 0.95);
+        });
+
+        return new File([preprocessedBlob], 'receipt.jpg', { type: 'image/jpeg' });
+      } catch (error) {
+        console.warn('Error during client-side preprocessing:', error);
+        // Fall back to original image if preprocessing fails
+        return new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
+      }
+    } catch (error) {
+      console.warn('Failed to preprocess image, using original:', error);
+      // Return the original image if preprocessing fails
+      return new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
+    }
   }
 
   /**
@@ -242,7 +307,7 @@ export class OCRService {
    */
   private static async processImageLocally(image: File, imageUrl: string): Promise<ExtractedData> {
     try {
-      console.log('Starting local image processing');
+      console.log('Starting local image processing with enhanced preprocessing');
 
       // Create a canvas to analyze the image
       const img = new Image();
@@ -269,8 +334,37 @@ export class OCRService {
         throw new Error('Failed to get canvas context');
       }
 
+      // Apply client-side preprocessing
+      console.log('Applying client-side image preprocessing...');
+
       // Draw the image on the canvas
       ctx.drawImage(img, 0, 0);
+
+      // Apply high contrast for better text visibility
+      try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        // Convert to grayscale and increase contrast
+        for (let i = 0; i < data.length; i += 4) {
+          // Convert to grayscale
+          const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+
+          // Apply threshold for high contrast
+          const newValue = avg > 128 ? 255 : 0;
+
+          // Set RGB channels to the new value
+          data[i] = data[i + 1] = data[i + 2] = newValue;
+        }
+
+        // Put the modified image data back on the canvas
+        ctx.putImageData(imageData, 0, 0);
+        console.log('Applied high contrast preprocessing');
+      } catch (preprocessError) {
+        console.error('Error during image preprocessing:', preprocessError);
+        // Continue with original image if preprocessing fails
+        ctx.drawImage(img, 0, 0);
+      }
 
       // Analyze the image to extract text patterns
       // This is a simplified approach - in a real implementation, we would use a client-side OCR library

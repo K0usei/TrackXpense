@@ -383,10 +383,10 @@ export default function AssistantPage() {
           </div>
         </div>
       ) : (
-        <div className="flex h-[calc(100vh-4rem-3rem)] sm:h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] overflow-hidden relative" {...swipeHandlers}>
+        <div className="flex h-[calc(100vh-4rem-3rem)] sm:h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] overflow-hidden fixed inset-0 top-[4rem] sm:top-[4rem] md:top-[4rem] lg:relative lg:top-0" {...swipeHandlers}>
           {/* Sidebar with conversation history */}
           <div
-            className={`${showSidebar ? 'w-64 md:w-72 lg:w-80' : 'w-0'} border-r bg-background flex flex-col h-full transition-all duration-300 overflow-hidden`}
+            className={`${showSidebar ? 'w-64 md:w-72 lg:w-80' : 'w-0'} border-r bg-background flex flex-col h-full transition-all duration-300 overflow-hidden z-40`}
           >
             <div className="p-4 border-b relative">
               {/* Dismiss button at top-right of sidebar */}
@@ -402,17 +402,10 @@ export default function AssistantPage() {
                 </svg>
               </Button>
 
-              <Button
-                onClick={startNewConversation}
-                className="w-[calc(100%-2rem)] justify-start gap-1.5 py-1.5 px-2 text-sm h-auto"
-                variant="outline"
-              >
-                <PlusCircle className="h-3.5 w-3.5" />
-                New Chat
-              </Button>
+              <h2 className="text-sm font-medium">Conversations</h2>
             </div>
 
-            <ScrollArea className="flex-1 p-2">
+            <ScrollArea className="flex-1 p-2 pb-16">
               <div className="space-y-2">
                 {conversations.map(conversation => (
                   <div key={conversation.id} className="group relative">
@@ -461,12 +454,34 @@ export default function AssistantPage() {
                 ))}
               </div>
             </ScrollArea>
+
+            {/* Floating New Chat button - only visible when sidebar is open */}
+            <div
+              className={`absolute bottom-[70px] xs:bottom-[70px] sm:bottom-[70px] lg:bottom-4 left-4 z-10 transition-all duration-300 ${showSidebar
+                ? 'opacity-100 translate-x-0 animate-in fade-in slide-in-from-left'
+                : 'opacity-0 -translate-x-4 animate-out fade-out slide-out-to-left'
+                }`}
+            >
+              <div className="group relative">
+                <Button
+                  onClick={startNewConversation}
+                  className="h-10 w-10 rounded-full bg-[#0066ff] hover:bg-[#0052cc] text-white shadow-sm flex items-center justify-center p-0 transition-all hover:shadow-md"
+                  title="New Chat"
+                  disabled={!showSidebar}
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  <span className="absolute left-full ml-2 px-2 py-1 rounded bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-xs">
+                    New Chat
+                  </span>
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Swipe indicator for mobile - only visible when sidebar is closed */}
           {!showSidebar && (
             <div
-              className="absolute left-0 top-1/2 -translate-y-1/2 bg-muted/80 hover:bg-muted rounded-r-full p-1 cursor-pointer transition-all duration-200 z-10 md:hidden"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -mt-16 xs:-mt-12 sm:-mt-8 md:mt-0 bg-muted/80 hover:bg-muted rounded-r-full p-1 cursor-pointer transition-all duration-200 z-20 md:hidden"
               onClick={() => setShowSidebar(true)}
             >
               <div className="w-1 h-16 flex flex-col justify-center items-center gap-1">
@@ -479,7 +494,7 @@ export default function AssistantPage() {
 
           {/* Desktop toggle button - only visible when sidebar is closed */}
           {!showSidebar && (
-            <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 left-0 z-20 transition-all duration-300">
+            <div className="hidden md:flex absolute top-1/2 -translate-y-1/2 -mt-16 xs:-mt-12 sm:-mt-8 md:mt-0 left-0 z-20 transition-all duration-300">
               <Button
                 variant="outline"
                 size="icon"
@@ -495,13 +510,13 @@ export default function AssistantPage() {
           )}
 
           {/* Main chat area */}
-          <div className="flex-1 flex flex-col h-full relative">
+          <div className="absolute inset-0 flex flex-col overflow-hidden z-10">
             {/* Messages container - scrollable area */}
-            <div className="absolute inset-0 pb-[90px] xs:pb-[85px] sm:pb-[80px] md:pb-[70px] overflow-hidden">
+            <div className="absolute inset-0 pb-[100px] xs:pb-[100px] sm:pb-[100px] md:pb-[80px] overflow-hidden">
               <div className="h-full overflow-y-auto px-2 xs:px-3 sm:px-4 py-4 sm:py-6" ref={chatContainerRef}>
                 <div className="space-y-4 max-w-3xl mx-auto">
                   {messages.length === 0 ? (
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center justify-center -mt-32 xs:-mt-28 sm:-mt-20 md:-mt-12 lg:mt-0">
                       <div className="flex flex-col items-center space-y-4 text-center max-w-md">
                         <XpenserLogo size="lg" />
                         <p className="text-muted-foreground text-sm">
@@ -568,8 +583,8 @@ export default function AssistantPage() {
                 </div>
               </div>
 
-              {/* Fixed message input at bottom */}
-              <div className="absolute bottom-0 left-0 right-0 p-2 pb-3 xs:pb-3 sm:p-4 border-t bg-background z-10 shadow-sm mb-0 sm:mb-0">
+              {/* Floating message input at bottom */}
+              <div className="fixed bottom-0 left-0 right-0 p-2 pb-3 xs:pb-3 sm:p-4 border-t bg-background z-30 shadow-md mb-[45px] sm:mb-[60px] lg:mb-0">
                 <form
                   onSubmit={handleSubmit}
                   className="flex gap-1 sm:gap-2 max-w-3xl mx-auto"
@@ -584,7 +599,7 @@ export default function AssistantPage() {
                   <Button
                     type="submit"
                     disabled={isLoading || !message.trim()}
-                    className="px-2 sm:px-3 h-10 sm:h-10 bg-[#0066ff] hover:bg-[#0052cc] text-white shadow-md"
+                    className="px-3 sm:px-4 min-w-[50px] sm:min-w-[60px] h-10 sm:h-10 bg-[#0066ff] hover:bg-[#0052cc] text-white shadow-md"
                     size="sm"
                   >
                     {isLoading ? (

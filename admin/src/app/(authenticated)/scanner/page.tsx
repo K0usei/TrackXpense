@@ -2,9 +2,7 @@
 
 import { AdvancedReceiptScanner } from "@/components/scanner/advanced-receipt-scanner"
 import { useRouter } from 'next/navigation'
-import { Button } from "@/components/ui/button"
 import { toast } from "@/lib/toast"
-import { ArrowLeft } from "lucide-react"
 import type { ReceiptData } from '@/types/receipt'
 import { OCRService } from '@/lib/services/ocr-service'
 import { useNotification } from '@/contexts/NotificationContext'
@@ -52,22 +50,8 @@ export default function ScannerPage() {
     }
   }
 
-  const handleBack = () => {
-    router.back()
-  }
-
   return (
     <div className="fixed inset-0 w-full h-full bg-background overflow-hidden">
-      {/* Back Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute top-4 left-4 z-50 bg-black/20 hover:bg-black/40 text-white backdrop-blur-sm"
-        onClick={handleBack}
-      >
-        <ArrowLeft className="h-6 w-6" />
-      </Button>
-
       <AdvancedReceiptScanner onScanComplete={handleScanComplete} />
     </div>
   )

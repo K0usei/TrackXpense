@@ -104,7 +104,7 @@ export function XpenserChat() {
   }
 
   return (
-    <Card className="flex flex-col h-[calc(100vh-12rem)] bg-background">
+    <Card className="flex flex-col h-[calc(100vh-12rem)] bg-background relative overflow-hidden">
       <div className="p-4 border-b flex items-center gap-2">
         <Avatar className="h-8 w-8">
           <AvatarImage src="/xpenser-avatar.png" alt="Xpenser" />
@@ -116,7 +116,7 @@ export function XpenserChat() {
         </div>
       </div>
 
-      <ScrollArea ref={scrollRef} className="flex-1 p-4">
+      <ScrollArea ref={scrollRef} className="flex-1 p-4 pb-24">
         <div className="space-y-4">
           {messages.length === 0 ? (
             <div className="h-full flex items-center justify-center">
@@ -182,13 +182,13 @@ export function XpenserChat() {
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t">
+      <div className="p-4 border-t fixed bottom-0 left-0 right-0 bg-background z-10 shadow-sm">
         <form
           onSubmit={(e) => {
             e.preventDefault()
             handleSubmit(input)
           }}
-          className="flex gap-2"
+          className="flex gap-2 max-w-[calc(100%-2rem)] mx-auto"
         >
           <Input
             value={input}
@@ -200,7 +200,7 @@ export function XpenserChat() {
           <Button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="px-3"
+            className="px-3 bg-[#0066ff] hover:bg-[#0052cc] text-white shadow-md"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

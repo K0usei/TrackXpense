@@ -1,76 +1,226 @@
 import easyocr
 import numpy as np
+import cv2
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import io
 import re
 from datetime import datetime
 from typing import Dict, List, Any
 from sqlalchemy.orm import Session
-from app.models import Receipt, ReceiptItem
+from app.models import Receipt
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 class OCRService:
     def __init__(self):
         self.reader = easyocr.Reader(['en'])
 
+    def detect_skew(self, image_np: np.ndarray) -> float:
+        """Detect the skew angle of the image."""
+        # Convert to grayscale if it's not already
+        if len(image_np.shape) == 3:
+            gray = cv2.cvtColor(image_np, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image_np.copy()
+
+        # Apply threshold to get binary image
+        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+        # Find all contours
+        contours, _ = cv2.findContours(binary, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Find the largest contour by area
+        if not contours:
+            return 0.0
+
+        # Filter out very small contours
+        significant_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 100]
+        if not significant_contours:
+            return 0.0
+
+        # Get rotated rectangles for all significant contours
+        angles = []
+        for contour in significant_contours:
+            # Get minimum area rectangle
+            rect = cv2.minAreaRect(contour)
+            # Get angle
+            angle = rect[2]
+
+            # Adjust angle to be between -45 and 45 degrees
+            if angle < -45:
+                angle = 90 + angle
+            elif angle > 45:
+                angle = angle - 90
+
+            angles.append(angle)
+
+        # Use the median angle to avoid outliers
+        angles.sort()
+        median_angle = angles[len(angles) // 2] if angles else 0.0
+
+        logger.info(f"Detected skew angle: {median_angle:.2f} degrees")
+        return median_angle
+
+    def deskew_image(self, image_np: np.ndarray) -> np.ndarray:
+        """Deskew the image based on detected angle."""
+        # Detect skew angle
+        angle = self.detect_skew(image_np)
+
+        # If angle is very small, no need to deskew
+        if abs(angle) < 0.5:
+            logger.info("Skew angle too small, skipping deskew")
+            return image_np
+
+        # Get image dimensions
+        h, w = image_np.shape[:2]
+        center = (w // 2, h // 2)
+
+        # Get rotation matrix
+        M = cv2.getRotationMatrix2D(center, angle, 1.0)
+
+        # Perform rotation
+        rotated = cv2.warpAffine(
+            image_np,
+            M,
+            (w, h),
+            flags=cv2.INTER_CUBIC,
+            borderMode=cv2.BORDER_CONSTANT,
+            borderValue=(255, 255, 255)
+        )
+
+        logger.info(f"Image deskewed by {angle:.2f} degrees")
+        return rotated
+
+    def preprocess_image(self, image: Image.Image) -> Image.Image:
+        """Apply advanced preprocessing to enhance text visibility for OCR."""
+        # Convert PIL Image to numpy array for OpenCV processing
+        image_np = np.array(image)
+
+        # Deskew the image
+        logger.info("Deskewing image...")
+        deskewed = self.deskew_image(image_np)
+
+        # Convert back to PIL for further processing
+        deskewed_pil = Image.fromarray(deskewed)
+
+        # Convert to grayscale
+        gray = deskewed_pil.convert('L')
+
+        # Increase contrast
+        enhancer = ImageEnhance.Contrast(gray)
+        gray = enhancer.enhance(2.5)  # Increased contrast for better text visibility
+
+        # Apply slight blur to reduce noise
+        gray = gray.filter(ImageFilter.GaussianBlur(radius=0.5))
+
+        # Convert to numpy for OpenCV adaptive thresholding
+        gray_np = np.array(gray)
+
+        # Apply adaptive thresholding using OpenCV for better results
+        binary_np = cv2.adaptiveThreshold(
+            gray_np,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY,
+            11,  # Block size
+            2    # Constant subtracted from mean
+        )
+
+        # Convert back to PIL
+        binary = Image.fromarray(binary_np)
+
+        # Apply dilation to make text more prominent
+        binary = binary.filter(ImageFilter.MaxFilter(3))
+
+        # Sharpen the image to make text clearer
+        sharpened = binary.filter(ImageFilter.SHARPEN)
+
+        logger.info("Image preprocessing completed")
+        return sharpened
+
     def process_image(self, image_bytes: bytes) -> Dict[str, Any]:
+        """Process receipt image with advanced preprocessing and OCR."""
         # Convert bytes to image
         image = Image.open(io.BytesIO(image_bytes))
-        print(f"Image size: {image.size}, mode: {image.mode}")
+        logger.info(f"Image size: {image.size}, mode: {image.mode}")
 
-        # Try different preprocessing approaches to improve text extraction
-
-        # 1. First try with minimal preprocessing
-        gray_image = image.convert('L')
-        print("Converted image to grayscale")
-
-        enhancer = ImageEnhance.Contrast(gray_image)
-        enhanced_image = enhancer.enhance(2.0)  # Increase contrast more
-        print("Enhanced image contrast")
+        # Apply our advanced preprocessing pipeline
+        logger.info("Applying advanced image preprocessing...")
+        processed_image = self.preprocess_image(image)
 
         # Convert to numpy array for OCR
-        image_np = np.array(enhanced_image)
-        print(f"Converted image to numpy array with shape {image_np.shape}")
+        processed_np = np.array(processed_image)
 
-        # Perform OCR with minimal preprocessing
-        print("Starting OCR text extraction with minimal preprocessing...")
-        results = self.reader.readtext(image_np)
-        print(f"OCR extracted {len(results)} text elements")
+        # Perform OCR with advanced preprocessing
+        logger.info("Performing OCR with advanced preprocessing...")
+        results = self.reader.readtext(processed_np)
+        logger.info(f"OCR extracted {len(results)} text elements with advanced preprocessing")
 
-        # If no text was found, try with more aggressive preprocessing
+        # If no text was found, try with alternative preprocessing approaches
         if len(results) == 0:
-            print("No text found with minimal preprocessing, trying more aggressive approach...")
-            # Apply thresholding for better text extraction
+            logger.info("No text found with advanced preprocessing, trying alternative approach...")
 
-            # Invert colors if the image is dark (helps with some receipts)
-            inverted_image = ImageOps.invert(gray_image)
-            # Apply stronger contrast
+            # Try inverting the image (dark background to light)
+            inverted_image = ImageOps.invert(image.convert('L'))
             enhancer = ImageEnhance.Contrast(inverted_image)
             enhanced_image = enhancer.enhance(2.5)
+
             # Apply sharpening
             enhanced_image = enhanced_image.filter(ImageFilter.SHARPEN)
 
             # Convert to numpy array for OCR
             image_np = np.array(enhanced_image)
 
-            # Try OCR again with more aggressive preprocessing
-            print("Trying OCR with more aggressive preprocessing...")
+            # Try OCR again with inverted preprocessing
             results = self.reader.readtext(image_np)
-            print(f"OCR extracted {len(results)} text elements with aggressive preprocessing")
+            logger.info(f"OCR extracted {len(results)} text elements with inverted preprocessing")
 
         # If still no text, try with the original image as a last resort
         if len(results) == 0:
-            print("Still no text found, trying with original image...")
+            logger.info("Still no text found, trying with original image...")
             image_np = np.array(image)
             results = self.reader.readtext(image_np)
-            print(f"OCR extracted {len(results)} text elements with original image")
+            logger.info(f"OCR extracted {len(results)} text elements with original image")
+
+        # If still no results, try one more approach with OpenCV preprocessing
+        if len(results) == 0:
+            logger.info("No text found with previous methods, trying OpenCV preprocessing...")
+
+            # Convert to OpenCV format
+            img_cv = np.array(image)
+            if len(img_cv.shape) == 3:
+                img_cv = cv2.cvtColor(img_cv, cv2.COLOR_RGB2GRAY)
+
+            # Apply bilateral filter to preserve edges while removing noise
+            img_cv = cv2.bilateralFilter(img_cv, 9, 75, 75)
+
+            # Apply adaptive threshold
+            img_cv = cv2.adaptiveThreshold(
+                img_cv, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                cv2.THRESH_BINARY, 11, 2
+            )
+
+            # Apply morphological operations to clean up the image
+            kernel = np.ones((1, 1), np.uint8)
+            img_cv = cv2.morphologyEx(img_cv, cv2.MORPH_CLOSE, kernel)
+
+            # Try OCR with this approach
+            results = self.reader.readtext(img_cv)
+            logger.info(f"OCR extracted {len(results)} text elements with OpenCV preprocessing")
 
         # Log the first few results for debugging
         if results:
-            print("Sample of extracted text:")
+            logger.info("Sample of extracted text:")
             for i, (_, text, conf) in enumerate(results[:5]):
-                print(f"  {i}: '{text}' (confidence: {conf:.2f})")
+                logger.info(f"  {i}: '{text}' (confidence: {conf:.2f})")
         else:
-            print("No text was extracted from the image")
+            logger.warning("No text was extracted from the image")
 
         # Extract relevant information
         extracted_data = self._parse_receipt(results)
@@ -78,10 +228,11 @@ class OCRService:
         return extracted_data
 
     def _parse_receipt(self, ocr_results: List) -> Dict[str, Any]:
+        """Parse OCR results into structured receipt data with BERT classification."""
         text_blocks = [block[1] for block in ocr_results]
         text = '\n'.join(text_blocks)
 
-        print(f"Parsing receipt with {len(text_blocks)} blocks of text")
+        logger.info(f"Parsing receipt with {len(text_blocks)} blocks of text")
 
         # Initialize receipt data according to the illustrated structure
         receipt_data = {
@@ -111,7 +262,7 @@ class OCRService:
 
         # If no text was extracted, return empty data
         if not text_blocks:
-            print("No text blocks were extracted, returning empty receipt data")
+            logger.warning("No text blocks were extracted, returning empty receipt data")
             return receipt_data
 
         # Extract store name (usually first few lines)
@@ -119,20 +270,20 @@ class OCRService:
         for i in range(min(3, len(text_blocks))):
             if len(text_blocks[i]) > 2 and not any(word in text_blocks[i].lower() for word in ['tel', 'phone', 'address', 'receipt', 'www', 'http', '.com']):
                 receipt_data['store']['name'] = text_blocks[i]
-                print(f"Extracted store name: '{text_blocks[i]}'")
+                logger.info(f"Extracted store name: '{text_blocks[i]}'")
                 break
 
         # If no store name found, use the first line
         if not receipt_data['store']['name'] and text_blocks:
             receipt_data['store']['name'] = text_blocks[0]
-            print(f"Using first line as store name: '{text_blocks[0]}'")
+            logger.info(f"Using first line as store name: '{text_blocks[0]}'")
 
         # Look for address in the next few lines after store name
         address_start = 1 if receipt_data['store']['name'] == text_blocks[0] else 2
         for i in range(address_start, min(address_start + 3, len(text_blocks))):
             if any(word in text_blocks[i].lower() for word in ['street', 'ave', 'road', 'blvd', 'st', 'dr', 'lane']):
                 receipt_data['store']['address'] = text_blocks[i]
-                print(f"Extracted store address: '{text_blocks[i]}'")
+                logger.info(f"Extracted store address: '{text_blocks[i]}'")
                 break
 
         # Find date
@@ -149,14 +300,14 @@ class OCRService:
                 if match := re.search(pattern, text, re.IGNORECASE):
                     try:
                         date_str = match.group(0)
-                        print(f"Found date pattern: '{date_str}'")
+                        logger.info(f"Found date pattern: '{date_str}'")
 
                         # Try different date formats
                         for fmt in ['%m/%d/%Y', '%d/%m/%Y', '%Y-%m-%d', '%d-%m-%Y', '%m-%d-%Y', '%B %d, %Y', '%b %d, %Y', '%d %B %Y', '%d %b %Y']:
                             try:
                                 parsed_date = datetime.strptime(date_str, fmt)
                                 receipt_data['date'] = parsed_date.strftime('%Y-%m-%d')
-                                print(f"Parsed date: {receipt_data['date']}")
+                                logger.info(f"Parsed date: {receipt_data['date']}")
                                 date_found = True
                                 break
                             except ValueError:
@@ -165,7 +316,7 @@ class OCRService:
                         if date_found:
                             break
                     except Exception as e:
-                        print(f"Error parsing date: {e}")
+                        logger.error(f"Error parsing date: {e}")
                         continue
 
             if date_found:
@@ -174,7 +325,7 @@ class OCRService:
         # If no date found, use current date
         if not receipt_data['date']:
             receipt_data['date'] = datetime.now().strftime('%Y-%m-%d')
-            print(f"No date found, using current date: {receipt_data['date']}")
+            logger.info(f"No date found, using current date: {receipt_data['date']}")
 
         # Find total amounts (subtotal, tax, discount, change, total amount)
         # Define patterns for each field

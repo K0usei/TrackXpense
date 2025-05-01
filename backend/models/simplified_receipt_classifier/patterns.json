@@ -2,7 +2,8 @@
   "STORE": [
     "^[A-Z\\s]+$",
     "^[A-Z][a-z]+\\s?[A-Za-z]*$",
-    "(store|restaurant|cafe|shop|market)"
+    "(store|restaurant|cafe|shop|market)",
+    "store\\s*name:?\\s*(.+)"
   ],
   "DATE": [
     "\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}",
@@ -11,15 +12,51 @@
     "\\d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \\d{4}",
     "date:?\\s*\\d"
   ],
-  "TOTAL": [
-    "total:?\\s*\\$?\\d+\\.?\\d*",
-    "amount:?\\s*\\$?\\d+\\.?\\d*",
-    "sum:?\\s*\\$?\\d+\\.?\\d*",
-    "^\\$?\\d+\\.\\d{2}$"
-  ],
   "ITEM": [
-    ".+\\s+\\d+\\s*x\\s*\\$?\\d+\\.\\d{2}",
-    ".+\\s+\\$?\\d+\\.\\d{2}",
-    ".+\\(\\d+\\)\\s+\\$?\\d+\\.\\d{2}"
+    "^[a-zA-Z0-9\\s\\-\\&\\.\\']+$",
+    "item\\s*name:?\\s*(.+)"
+  ],
+  "QTY": [
+    "^\\d+$",
+    "qty:?\\s*\\d+",
+    "quantity:?\\s*\\d+",
+    "x\\s*\\d+",
+    "\\d+\\s*pc"
+  ],
+  "PRICE": [
+    "^\\$?\\d+\\.\\d{2}$",
+    "price:?\\s*\\$?\\d+\\.\\d{2}",
+    "@\\s*\\$?\\d+\\.\\d{2}",
+    "each:?\\s*\\$?\\d+\\.\\d{2}"
+  ],
+  "SUBTOTAL": [
+    "subtotal:?\\s*\\$?\\d+\\.\\d{2}",
+    "sub\\s*total:?\\s*\\$?\\d+\\.\\d{2}",
+    "sub-total:?\\s*\\$?\\d+\\.\\d{2}"
+  ],
+  "TAX": [
+    "tax:?\\s*\\$?\\d+\\.\\d{2}",
+    "vat:?\\s*\\$?\\d+\\.\\d{2}",
+    "sales\\s*tax:?\\s*\\$?\\d+\\.\\d{2}",
+    "gst:?\\s*\\$?\\d+\\.\\d{2}",
+    "hst:?\\s*\\$?\\d+\\.\\d{2}"
+  ],
+  "DISCOUNT": [
+    "discount:?\\s*\\$?\\d+\\.\\d{2}",
+    "savings:?\\s*\\$?\\d+\\.\\d{2}",
+    "coupon:?\\s*\\$?\\d+\\.\\d{2}",
+    "promo:?\\s*\\$?\\d+\\.\\d{2}"
+  ],
+  "CHANGE": [
+    "change:?\\s*\\$?\\d+\\.\\d{2}",
+    "cash\\s*back:?\\s*\\$?\\d+\\.\\d{2}",
+    "returned:?\\s*\\$?\\d+\\.\\d{2}"
+  ],
+  "TOTAL": [
+    "total:?\\s*\\$?\\d+\\.\\d{2}",
+    "amount:?\\s*\\$?\\d+\\.\\d{2}",
+    "sum:?\\s*\\$?\\d+\\.\\d{2}",
+    "grand\\s*total:?\\s*\\$?\\d+\\.\\d{2}",
+    "balance\\s*due:?\\s*\\$?\\d+\\.\\d{2}"
   ]
 }

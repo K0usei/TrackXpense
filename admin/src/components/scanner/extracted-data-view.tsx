@@ -1,15 +1,17 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ExtractedData, ReceiptData, ReceiptItem } from '@/types/receipt'
 import { formatCurrency } from '@/lib/utils'
-import { Save, RotateCcw, Plus, Trash2 } from 'lucide-react'
+import { Save, RotateCcw, Plus, Trash2, FileText, Image as ImageIcon } from 'lucide-react'
+import { generateComputerizedTextImage } from '@/lib/utils/receipt-text-renderer'
 
 // Function to calculate container height based on number of items
 const getItemsContainerHeight = (itemCount: number): string => {
@@ -37,6 +39,12 @@ export function ExtractedDataView({
   // Track which image is currently being displayed
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
+  // Track view mode (original image or computerized text)
+  const [viewMode, setViewMode] = useState<'image' | 'text'>('image')
+
+  // Store the computerized text image URL
+  const [computerizedTextImageUrl, setComputerizedTextImageUrl] = useState<string>('')
+
   // Combine all images into a single array
   const allImages = [scannedImageUrl, ...additionalImages].filter(Boolean)
   const [editedData, setEditedData] = useState<ExtractedData>({
@@ -44,8 +52,99 @@ export function ExtractedDataView({
     store: data.store || { name: '', address: '' },
     total: data.total || { subtotal: 0, tax: 0, discount: 0, change: 0, amount: 0 },
     category: data.category || 'Others',
-    items: data.items && data.items.length > 0 ? data.items : [{ name: '', quantity: 0, price: 0 }]
+    items: data.items && data.items.length > 0 ? data.items : [{ name: '', quantity: 0, price: 0 }],
+    rawText: data.rawText || ''
   })
+
+  // Generate computerized text image when raw text changes
+  useEffect(() => {
+    if (editedData.rawText) {
+      // Format the raw text into a more structured receipt format
+      const formattedText = formatReceiptText(editedData);
+
+      // Generate the computerized text image
+      const imageUrl = generateComputerizedTextImage(formattedText, {
+        width: 350,
+        maxHeight: 600,
+        fontSize: 12,
+        lineHeight: 1.3
+      });
+
+      setComputerizedTextImageUrl(imageUrl);
+    }
+  }, [editedData.rawText]);
+
+  // Format raw text into a structured receipt format
+  const formatReceiptText = (data: ExtractedData): string => {
+    // Start with store information
+    let text = '';
+
+    if (data.store?.name) {
+      text += `${data.store.name.toUpperCase()}\n`;
+    }
+
+    if (data.store?.address) {
+      text += `${data.store.address}\n`;
+    }
+
+    // Add date and time
+    text += '\n';
+    if (data.date) {
+      text += `Date: ${data.date}\n`;
+    }
+
+    if (data.time) {
+      text += `Time: ${data.time}\n`;
+    }
+
+    // Add separator
+    text += '\n' + '-'.repeat(40) + '\n\n';
+
+    // Add items
+    if (data.items && data.items.length > 0) {
+      data.items.forEach(item => {
+        if (item.name) {
+          const price = formatCurrency(item.price);
+          const quantity = item.quantity || 1;
+          const total = formatCurrency(item.price * quantity);
+
+          // Format: Item name    Qty x Price    Total
+          text += `${item.name.padEnd(20)} ${quantity} x ${price.padStart(6)}  ${total.padStart(8)}\n`;
+        }
+      });
+
+      text += '\n';
+    }
+
+    // Add totals
+    text += '-'.repeat(40) + '\n\n';
+
+    if (data.total) {
+      if (data.total.subtotal > 0) {
+        text += `Subtotal:${formatCurrency(data.total.subtotal).padStart(32)}\n`;
+      }
+
+      if (data.total.tax > 0) {
+        text += `Tax:${formatCurrency(data.total.tax).padStart(37)}\n`;
+      }
+
+      if (data.total.discount > 0) {
+        text += `Discount:${formatCurrency(data.total.discount).padStart(32)}\n`;
+      }
+
+      if (data.total.change > 0) {
+        text += `Change:${formatCurrency(data.total.change).padStart(34)}\n`;
+      }
+
+      text += `\nTOTAL:${formatCurrency(data.total.amount).padStart(35)}\n`;
+    }
+
+    // Add footer
+    text += '\n' + '-'.repeat(40) + '\n\n';
+    text += 'Thank you for your purchase!\n';
+
+    return text;
+  }
 
   const handleInputChange = (field: keyof ExtractedData, value: any) => {
     setEditedData(prev => ({
@@ -134,46 +233,104 @@ export function ExtractedDataView({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {/* Scanned Document Image */}
+            {/* Scanned Document Image with Tabs */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <Label className="text-base font-medium">Scanned Receipt</Label>
-                {allImages.length > 1 && (
+                {allImages.length > 1 && viewMode === 'image' && (
                   <div className="text-sm text-muted-foreground">
                     Section {currentImageIndex + 1} of {allImages.length}
                   </div>
                 )}
               </div>
-              <div className="relative aspect-[9/16] w-full border rounded-md overflow-hidden">
-                <Image
-                  src={allImages[currentImageIndex] || scannedImageUrl}
-                  alt={`Receipt Section ${currentImageIndex + 1}`}
-                  fill
-                  className="object-contain"
-                />
-              </div>
 
-              {/* Image navigation controls */}
-              {allImages.length > 1 && (
-                <div className="flex justify-between mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
-                    disabled={currentImageIndex === 0}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentImageIndex(prev => Math.min(allImages.length - 1, prev + 1))}
-                    disabled={currentImageIndex === allImages.length - 1}
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
+              {/* View Mode Tabs */}
+              <Tabs defaultValue="image" className="w-full" onValueChange={(value) => setViewMode(value as 'image' | 'text')}>
+                <TabsList className="grid w-full grid-cols-2 mb-2">
+                  <TabsTrigger value="image" className="flex items-center gap-1">
+                    <ImageIcon className="h-4 w-4" />
+                    <span>Original</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="text" className="flex items-center gap-1">
+                    <FileText className="h-4 w-4" />
+                    <span>Digital Text</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="image" className="mt-0">
+                  <div className="relative aspect-[9/16] w-full border rounded-md overflow-hidden">
+                    <Image
+                      src={allImages[currentImageIndex] || scannedImageUrl}
+                      alt={`Receipt Section ${currentImageIndex + 1}`}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+
+                  {/* Image navigation controls */}
+                  {allImages.length > 1 && (
+                    <div className="flex justify-between mt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
+                        disabled={currentImageIndex === 0}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentImageIndex(prev => Math.min(allImages.length - 1, prev + 1))}
+                        disabled={currentImageIndex === allImages.length - 1}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="text" className="mt-0">
+                  <div className="flex flex-col gap-2">
+                    <div className="relative aspect-[9/16] w-full border rounded-md overflow-hidden bg-white">
+                      {computerizedTextImageUrl ? (
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={computerizedTextImageUrl}
+                            alt="Computerized Receipt Text"
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          No text data available
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Toggle to show/edit raw text */}
+                    <div className="mt-2">
+                      <details className="text-sm">
+                        <summary className="cursor-pointer font-medium text-blue-600 hover:text-blue-800">
+                          View/Edit Raw Text
+                        </summary>
+                        <div className="mt-2">
+                          <textarea
+                            value={editedData.rawText}
+                            onChange={(e) => handleInputChange('rawText', e.target.value)}
+                            className="w-full h-32 p-2 text-xs font-mono border rounded-md"
+                            placeholder="Raw receipt text"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Edit the raw text to improve the digital receipt display
+                          </p>
+                        </div>
+                      </details>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
 
             {/* Extracted Data Form */}

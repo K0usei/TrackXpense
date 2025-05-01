@@ -82,7 +82,9 @@ class ReceiptParser:
             "date": "",
             "time": "",
             "total": 0.0,
+            "subtotal": 0.0,
             "tax": 0.0,
+            "discount": 0.0,
             "change": 0.0,
             "items": [],
             "category": "Others",  # Default category
@@ -129,6 +131,84 @@ class ReceiptParser:
                     receipt_data["date"] = date
                     break
 
+        # Extract item names (ITEM)
+        item_lines = [lines[i] for i, label in enumerate(field_labels) if label == 'ITEM']
+        item_names = {}  # Store item names by position to match with qty and price
+        for i, line in enumerate(item_lines):
+            # Store the item name with its position
+            item_names[i] = line.strip()
+
+        # Extract quantities (QTY)
+        qty_lines = [lines[i] for i, label in enumerate(field_labels) if label == 'QTY']
+        quantities = {}  # Store quantities by position
+        for i, line in enumerate(qty_lines):
+            # Extract the quantity from the line
+            qty_match = re.search(r'(\d+)', line)
+            if qty_match:
+                quantities[i] = int(qty_match.group(1))
+            else:
+                quantities[i] = 1  # Default quantity
+
+        # Extract prices (PRICE)
+        price_lines = [lines[i] for i, label in enumerate(field_labels) if label == 'PRICE']
+        prices = {}  # Store prices by position
+        for i, line in enumerate(price_lines):
+            price = self._extract_amount(line)
+            if price:
+                prices[i] = price
+            else:
+                prices[i] = 0.0  # Default price
+
+        # Combine item data
+        items = []
+        # Use the maximum number of any component to determine how many items we have
+        max_items = max(len(item_names), len(quantities), len(prices))
+        for i in range(max_items):
+            item = {
+                "name": item_names.get(i, f"Item {i+1}"),
+                "quantity": quantities.get(i, 1),
+                "price": prices.get(i, 0.0)
+            }
+            items.append(item)
+
+        receipt_data["items"] = items
+
+        # Extract subtotal (SUBTOTAL)
+        subtotal_lines = [lines[i] for i, label in enumerate(field_labels) if label == 'SUBTOTAL']
+        if subtotal_lines:
+            for line in subtotal_lines:
+                subtotal = self._extract_amount(line)
+                if subtotal:
+                    receipt_data["subtotal"] = subtotal
+                    break
+
+        # Extract tax (TAX)
+        tax_lines = [lines[i] for i, label in enumerate(field_labels) if label == 'TAX']
+        if tax_lines:
+            for line in tax_lines:
+                tax = self._extract_amount(line)
+                if tax:
+                    receipt_data["tax"] = tax
+                    break
+
+        # Extract discount (DISCOUNT)
+        discount_lines = [lines[i] for i, label in enumerate(field_labels) if label == 'DISCOUNT']
+        if discount_lines:
+            for line in discount_lines:
+                discount = self._extract_amount(line)
+                if discount:
+                    receipt_data["discount"] = discount
+                    break
+
+        # Extract change (CHANGE)
+        change_lines = [lines[i] for i, label in enumerate(field_labels) if label == 'CHANGE']
+        if change_lines:
+            for line in change_lines:
+                change = self._extract_amount(line)
+                if change:
+                    receipt_data["change"] = change
+                    break
+
         # Extract total (TOTAL)
         total_lines = [lines[i] for i, label in enumerate(field_labels) if label == 'TOTAL']
         if total_lines:
@@ -138,25 +218,8 @@ class ReceiptParser:
                     receipt_data["total"] = total
                     break
 
-        # Extract items (ITEM)
-        item_lines = [lines[i] for i, label in enumerate(field_labels) if label == 'ITEM']
-        items = []
-        for line in item_lines:
-            item = self._parse_item_line(line)
-            if item:
-                items.append(item)
-
-        receipt_data["items"] = items
-
-        # Extract tax and time using rule-based approach
+        # Extract time using rule-based approach
         for line in lines:
-            # Extract tax
-            if 'tax' in line.lower() and not receipt_data["tax"]:
-                tax = self._extract_amount(line)
-                if tax:
-                    receipt_data["tax"] = tax
-
-            # Extract time
             if 'time' in line.lower() and not receipt_data["time"]:
                 time_match = re.search(r'(\d{1,2}:\d{2}(?:\s*[AP]M)?)', line, re.IGNORECASE)
                 if time_match:
@@ -222,12 +285,36 @@ class ReceiptParser:
                 receipt_data["total"] = largest_amount
                 logger.info(f"Extracted total from largest amount: {largest_amount}")
 
+        # Extract subtotal
+        for line in lines:
+            if any(word in line.lower() for word in ['subtotal', 'sub total', 'sub-total']):
+                subtotal = self._extract_amount(line)
+                if subtotal:
+                    receipt_data["subtotal"] = subtotal
+                    break
+
         # Extract tax
         for line in lines:
-            if 'tax' in line.lower():
+            if any(word in line.lower() for word in ['tax', 'vat', 'gst', 'hst']):
                 tax = self._extract_amount(line)
                 if tax:
                     receipt_data["tax"] = tax
+                    break
+
+        # Extract discount
+        for line in lines:
+            if any(word in line.lower() for word in ['discount', 'savings', 'coupon', 'promo']):
+                discount = self._extract_amount(line)
+                if discount:
+                    receipt_data["discount"] = discount
+                    break
+
+        # Extract change
+        for line in lines:
+            if any(word in line.lower() for word in ['change', 'cash back', 'returned']):
+                change = self._extract_amount(line)
+                if change:
+                    receipt_data["change"] = change
                     break
 
         # Extract items (more complex)
@@ -366,6 +453,37 @@ class ReceiptParser:
         if len(line) < 3 or not re.search(r'[a-zA-Z0-9]', line):
             return None
 
+        # Check if this is a labeled item name
+        item_name_pattern = r'item\s*name:?\s*(.+)'
+        item_name_match = re.search(item_name_pattern, line, re.IGNORECASE)
+        if item_name_match:
+            return {
+                "name": item_name_match.group(1).strip(),
+                "quantity": 1,
+                "price": 0.0  # No price found yet
+            }
+
+        # Check if this is a labeled quantity
+        qty_pattern = r'qty:?\s*(\d+)|quantity:?\s*(\d+)'
+        qty_match = re.search(qty_pattern, line, re.IGNORECASE)
+        if qty_match:
+            qty = qty_match.group(1) or qty_match.group(2)
+            return {
+                "name": "Item",  # Generic name
+                "quantity": int(qty),
+                "price": 0.0  # No price found yet
+            }
+
+        # Check if this is a labeled price
+        price_label_pattern = r'price:?\s*\$?(\d+\.\d{2})'
+        price_label_match = re.search(price_label_pattern, line, re.IGNORECASE)
+        if price_label_match:
+            return {
+                "name": "Item",  # Generic name
+                "quantity": 1,
+                "price": float(price_label_match.group(1))
+            }
+
         # First, try to extract quantity and price pattern like "2 x $3.99"
         quantity_price_pattern = r'(\d+)\s*x\s*\$?(\d+\.?\d*)'
         quantity_match = re.search(quantity_price_pattern, line)
@@ -491,13 +609,13 @@ class ReceiptParser:
                 continue
 
             # Check if this line might be the start of the item section
-            if not item_section_started and any(word in line.lower() for word in ['item', 'description', 'qty', 'quantity', 'price', 'amount', 'product']):
+            if not item_section_started and any(word in line.lower() for word in ['item', 'description', 'qty', 'quantity', 'price', 'amount', 'product', 'name']):
                 item_section_started = True
                 logger.info(f"Found potential item section start at line {i}: '{line}'")
                 continue
 
             # Check if this line might be the end of the item section
-            if item_section_started and not item_section_ended and any(word in line.lower() for word in ['subtotal', 'total', 'tax', 'amount', 'balance', 'due', 'payment']):
+            if item_section_started and not item_section_ended and any(word in line.lower() for word in ['subtotal', 'total', 'tax', 'amount', 'balance', 'due', 'payment', 'discount', 'change']):
                 item_section_ended = True
                 logger.info(f"Found potential item section end at line {i}: '{line}'")
                 continue
@@ -514,7 +632,7 @@ class ReceiptParser:
             logger.info("No item section found, looking for price patterns in all lines")
             for i, line in enumerate(lines):
                 # Skip lines that are likely not items
-                if any(word in line.lower() for word in ['receipt', 'date', 'time', 'tel', 'phone', 'address', 'thank', 'total', 'tax', 'subtotal', 'balance', 'due', 'payment']):
+                if any(word in line.lower() for word in ['receipt', 'date', 'time', 'tel', 'phone', 'address', 'thank', 'total', 'tax', 'subtotal', 'balance', 'due', 'payment', 'discount', 'change']):
                     continue
 
                 # Look for price patterns (e.g., $12.34)
@@ -531,7 +649,7 @@ class ReceiptParser:
             logger.info("No items with price patterns found, looking for any numbers")
             for i, line in enumerate(lines):
                 # Skip header/footer lines
-                if any(word in line.lower() for word in ['receipt', 'date', 'time', 'tel', 'phone', 'address', 'thank', 'total', 'tax', 'subtotal']):
+                if any(word in line.lower() for word in ['receipt', 'date', 'time', 'tel', 'phone', 'address', 'thank', 'total', 'tax', 'subtotal', 'discount', 'change']):
                     continue
 
                 # If the line has any numbers, try to extract an item

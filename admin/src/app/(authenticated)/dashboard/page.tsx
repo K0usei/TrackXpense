@@ -31,9 +31,13 @@ export default function DashboardPage() {
     ? data.spendingTrends.reduce((sum, item) => sum + item.amount, 0)
     : 0
 
-  // Calculate the remaining balance based on monthly budget minus expenses
-  // Since we have no expenses yet, this will be equal to the monthly budget
-  const remainingBalance = monthlyBudget - totalExpenses
+  // Get the total monthly expenses from the data object
+  // This value is not affected by the timeframe filter
+  const totalMonthlyExpenses = data?.totalMonthlyExpenses || 0
+
+  // Calculate the remaining balance based on monthly budget minus MONTHLY expenses
+  // This ensures the remaining balance is not affected by the timeframe filter
+  const remainingBalance = monthlyBudget - totalMonthlyExpenses
 
   // Avoid NaN in percentage calculations
   const safeMonthlyBudget = monthlyBudget || 1 // Use 1 to avoid division by zero

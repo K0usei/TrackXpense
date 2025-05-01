@@ -1,10 +1,12 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Body
-from PIL import Image, ImageEnhance, ImageFilter
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import io
 import sys
 import os
 import re
 import logging
+import numpy as np
+import cv2
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
@@ -58,16 +60,128 @@ def extract_date(text: str) -> str:
             return match.group(0)
     return ""
 
+def detect_skew(image_np: np.ndarray) -> float:
+    """Detect the skew angle of the image."""
+    # Convert to grayscale if it's not already
+    if len(image_np.shape) == 3:
+        gray = cv2.cvtColor(image_np, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image_np.copy()
+
+    # Apply threshold to get binary image
+    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+    # Find all contours
+    contours, _ = cv2.findContours(binary, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Find the largest contour by area
+    if not contours:
+        return 0.0
+
+    # Filter out very small contours
+    significant_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 100]
+    if not significant_contours:
+        return 0.0
+
+    # Get rotated rectangles for all significant contours
+    angles = []
+    for contour in significant_contours:
+        # Get minimum area rectangle
+        rect = cv2.minAreaRect(contour)
+        # Get angle
+        angle = rect[2]
+
+        # Adjust angle to be between -45 and 45 degrees
+        if angle < -45:
+            angle = 90 + angle
+        elif angle > 45:
+            angle = angle - 90
+
+        angles.append(angle)
+
+    # Use the median angle to avoid outliers
+    angles.sort()
+    median_angle = angles[len(angles) // 2] if angles else 0.0
+
+    logger.info(f"Detected skew angle: {median_angle:.2f} degrees")
+    return median_angle
+
+def deskew_image(image_np: np.ndarray) -> np.ndarray:
+    """Deskew the image based on detected angle."""
+    # Detect skew angle
+    angle = detect_skew(image_np)
+
+    # If angle is very small, no need to deskew
+    if abs(angle) < 0.5:
+        logger.info("Skew angle too small, skipping deskew")
+        return image_np
+
+    # Get image dimensions
+    h, w = image_np.shape[:2]
+    center = (w // 2, h // 2)
+
+    # Get rotation matrix
+    M = cv2.getRotationMatrix2D(center, angle, 1.0)
+
+    # Perform rotation
+    rotated = cv2.warpAffine(
+        image_np,
+        M,
+        (w, h),
+        flags=cv2.INTER_CUBIC,
+        borderMode=cv2.BORDER_CONSTANT,
+        borderValue=(255, 255, 255)
+    )
+
+    logger.info(f"Image deskewed by {angle:.2f} degrees")
+    return rotated
+
 def preprocess_image(image: Image.Image) -> Image.Image:
-    """Apply minimal preprocessing to enhance text visibility."""
-    # Convert to grayscale for better text contrast
-    gray_image = image.convert('L')
+    """Apply advanced preprocessing to enhance text visibility for OCR."""
+    # Convert PIL Image to numpy array for OpenCV processing
+    image_np = np.array(image)
 
-    # Apply slight contrast enhancement
-    enhancer = ImageEnhance.Contrast(gray_image)
-    enhanced_image = enhancer.enhance(1.5)
+    # Deskew the image
+    logger.info("Deskewing image...")
+    deskewed = deskew_image(image_np)
 
-    return enhanced_image
+    # Convert back to PIL for further processing
+    deskewed_pil = Image.fromarray(deskewed)
+
+    # Convert to grayscale
+    gray = deskewed_pil.convert('L')
+
+    # Increase contrast
+    enhancer = ImageEnhance.Contrast(gray)
+    gray = enhancer.enhance(2.5)  # Increased contrast for better text visibility
+
+    # Apply slight blur to reduce noise
+    gray = gray.filter(ImageFilter.GaussianBlur(radius=0.5))
+
+    # Convert to numpy for OpenCV adaptive thresholding
+    gray_np = np.array(gray)
+
+    # Apply adaptive thresholding using OpenCV for better results
+    binary_np = cv2.adaptiveThreshold(
+        gray_np,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        11,  # Block size
+        2    # Constant subtracted from mean
+    )
+
+    # Convert back to PIL
+    binary = Image.fromarray(binary_np)
+
+    # Apply dilation to make text more prominent
+    binary = binary.filter(ImageFilter.MaxFilter(3))
+
+    # Sharpen the image to make text clearer
+    sharpened = binary.filter(ImageFilter.SHARPEN)
+
+    logger.info("Image preprocessing completed")
+    return sharpened
 
 def parse_receipt_data(ocr_result: List) -> Dict[str, Any]:
     """Parse OCR results into structured data."""
@@ -212,10 +326,22 @@ async def process_receipt(image: UploadFile = File(...), db: Session = Depends(g
         contents = await image.read()
         logger.info(f"Processing receipt image with size: {len(contents)} bytes")
 
-        # Process the receipt using the receipt processor
-        logger.info("Starting receipt processing with direct text extraction")
+        # Process the receipt using the enhanced receipt processor
+        logger.info("Starting receipt processing with advanced image preprocessing")
         receipt_data = receipt_processor.process_image(contents)
-        logger.info(f"Receipt processing complete. Extracted data: vendor='{receipt_data.get('vendor', 'N/A')}', total={receipt_data.get('total', 0)}, items={len(receipt_data.get('items', []))}")
+
+        # Log the results
+        vendor_name = receipt_data.get('vendor', 'N/A')
+        if not vendor_name and 'store' in receipt_data:
+            vendor_name = receipt_data.get('store', {}).get('name', 'N/A')
+
+        total_amount = receipt_data.get('total', 0)
+        if isinstance(total_amount, dict):
+            total_amount = total_amount.get('amount', 0)
+
+        items_count = len(receipt_data.get('items', []))
+
+        logger.info(f"Receipt processing complete. Extracted data: vendor='{vendor_name}', total={total_amount}, items={items_count}")
 
         # Format date if needed
         if isinstance(receipt_data["date"], str) and receipt_data["date"]:

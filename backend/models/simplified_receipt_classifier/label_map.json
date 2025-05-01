@@ -1,7 +1,13 @@
 {
   "STORE": 0,
   "DATE": 1,
-  "TOTAL": 2,
-  "ITEM": 3,
-  "O": 4
+  "ITEM": 2,
+  "QTY": 3,
+  "PRICE": 4,
+  "SUBTOTAL": 5,
+  "TAX": 6,
+  "DISCOUNT": 7,
+  "CHANGE": 8,
+  "TOTAL": 9,
+  "O": 10
 }
